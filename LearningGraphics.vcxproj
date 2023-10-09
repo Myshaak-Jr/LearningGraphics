@@ -141,10 +141,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\glad\glad.c" />
+    <ClCompile Include="include\tinyobj\tiny_obj_loader.cpp" />
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\factories.cpp" />
-    <ClCompile Include="src\GLObjectManager.cpp" />
+    <ClCompile Include="src\programManager.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\modelManager.cpp" />
     <ClCompile Include="src\systems.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -152,6 +154,7 @@
     <ClInclude Include="include\glad\khrplatform.h" />
     <ClInclude Include="src\app.h" />
     <ClInclude Include="src\comps\child.h" />
+    <ClInclude Include="src\comps\color.h" />
     <ClInclude Include="src\comps\dynamicallyScaled.h" />
     <ClInclude Include="src\comps\mesh.h" />
     <ClInclude Include="src\comps\movedByKeyboard.h" />
@@ -164,8 +167,8 @@
     <ClInclude Include="src\comps\transform.h" />
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\factories.h" />
-    <ClInclude Include="src\GLObjectManager.h" />
-    <ClInclude Include="src\model.h" />
+    <ClInclude Include="src\programManager.h" />
+    <ClInclude Include="src\modelManager.h" />
     <ClInclude Include="src\systems.h" />
   </ItemGroup>
   <ItemGroup>

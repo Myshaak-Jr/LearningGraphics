@@ -1,10 +1,16 @@
 #include "app.h"
-#include "systems.h"
+
 #include <iostream>
-#include "model.h"
+
 #include <glm/ext/scalar_constants.hpp>
+
+#include "systems.h"
 #include "constants.h"
 #include "factories.h"
+
+#include "comps/scale.h"
+#include "comps/transform.h"
+#include "comps/color.h"
 
 
 App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
@@ -15,7 +21,8 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	createWindow(width, height);
 	createContext(width, height);
 
-	objMngr = std::make_unique<GLObjectManager>();
+	prgMngr = std::make_unique<ProgramManager>();
+	modelMngr = std::make_unique<ModelManager>();
 	registry = std::make_unique<entt::registry>();
 
 	loadScene();
@@ -95,26 +102,44 @@ void App::loadScene() {
 
 void App::loadGLObjects() {
 	// load shader programs
-	objMngr->addShaderProgram(0,
+	prgMngr->LoadShaderProgram("noLights",
 		{ { GL_VERTEX_SHADER, "./shaders/vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/fragment.glsl" } },
-		{ "modelToCameraMatrix", "cameraToClipMatrix" }
+		{ "model", "projection", "aColor" }
 	);
 
-	// load vertex data
-	objMngr->addBuffer(0, vertexData1, GL_STATIC_DRAW);
-	objMngr->addBuffer(1, elementData1, GL_STATIC_DRAW);
-	
-	size_t colorDataOffset = sizeof(float) * 3 * numberOfVertices1;
-	objMngr->addMesh(0, 0, 1,
-		{
-			VertAttrPtr(3, GL_FLOAT, GL_FALSE, 0, (void*)0),
-			VertAttrPtr(4, GL_FLOAT, GL_FALSE, 0, (void*)colorDataOffset)
-		}
-	);
+	// load models
+	modelMngr->LoadModel("cube", "models/cube.obj", "models/");
 }
 
 void App::loadEntities() {
-	factories::createCrane(registry, objMngr);
+	auto cube = registry->create();
+	
+	registry->emplace<comps::position>(cube, glm::vec3(0.0f, 0.0f, -20.0f));
+	registry->emplace<comps::rotation>(cube);
+	registry->emplace<comps::scale>(cube);
+	registry->emplace<comps::transform>(cube);
+	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(cube, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f);
+	registry->emplace<comps::rotatedByKeyboard<EAngle::PITCH>>(cube, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, 90.0f, -89.9f, 89.9f);
+
+	auto cubeOffspring = modelMngr->GenEntities("cube", cube, registry);
+
+	for (const auto& child : *cubeOffspring) {
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("noLights"));
+	}
+
+	entt::entity front = cubeOffspring->at("front");
+	entt::entity right = cubeOffspring->at("right");
+	entt::entity back = cubeOffspring->at("back");
+	entt::entity left = cubeOffspring->at("left");
+	entt::entity top = cubeOffspring->at("top");
+	entt::entity bottom = cubeOffspring->at("bottom");
+	
+	registry->emplace<comps::color>(front,  HEX_COLOR(26547C));
+	registry->emplace<comps::color>(right,  HEX_COLOR(EF476F));
+	registry->emplace<comps::color>(back,   HEX_COLOR(FFD166));
+	registry->emplace<comps::color>(left,   HEX_COLOR(06D6A0));
+	registry->emplace<comps::color>(top,    HEX_COLOR(FFFCF9));
+	registry->emplace<comps::color>(bottom, HEX_COLOR(8DAA9D));
 }
 
 void App::run() {

@@ -10,6 +10,10 @@
 #include "comps/transform.h"
 #include "comps/dynamicallyScaled.h"
 #include "comps/orbiting.h"
+#include "comps/mesh.h"
+#include "comps/shaderProgram.h"
+#include "comps/color.h"
+
 
 void systems::orbitPos(const std::unique_ptr<entt::registry>& registry) {
 	auto view = registry->view<const comps::orbiting, comps::position>();
@@ -130,17 +134,18 @@ void systems::calcAbsoluteTransform(const std::unique_ptr<entt::registry>& regis
 }
 
 void systems::render(const std::unique_ptr<entt::registry>& registry, const glm::mat4& cameraMatrix) {
-	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform>();
+	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform, const comps::color>();
 
-	for (auto [entity, mesh, prg, transform] : view.each()) {
+	for (auto [entity, mesh, prg, transform, color] : view.each()) {
 		GLenum err;
 		while (glGetError() != GL_NO_ERROR);
 
 		glUseProgram(prg.program);
 		glBindVertexArray(mesh.vao);
 
-		glUniformMatrix4fv(prg.uniformLocations.at("modelToCameraMatrix"), 1, GL_FALSE, glm::value_ptr(transform.matrix));
-		glUniformMatrix4fv(prg.uniformLocations.at("cameraToClipMatrix"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
+		glUniformMatrix4fv(prg.uniformLocations.at("model"), 1, GL_FALSE, glm::value_ptr(transform.matrix));
+		glUniformMatrix4fv(prg.uniformLocations.at("projection"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
+		glUniform3f(prg.uniformLocations.at("aColor"), color.r, color.g, color.b);
 
 		glDrawElements(GL_TRIANGLES, mesh.elementCount, GL_UNSIGNED_SHORT, 0);
 

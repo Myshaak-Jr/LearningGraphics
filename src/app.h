@@ -1,11 +1,14 @@
 #pragma once
 
-#include <SDL2/SDL.h>
 #include <memory>
+
+#include <SDL2/SDL.h>
 #include <glad/glad.h>
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
-#include "GLObjectManager.h"
+
+#include "programManager.h"
+#include "modelManager.h"
 
 
 class App {
@@ -15,7 +18,8 @@ private:
 	std::unique_ptr<entt::registry> registry;
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 	SDL_GLContext context;
-	std::unique_ptr<GLObjectManager> objMngr;
+	std::unique_ptr<ProgramManager> prgMngr;
+	std::unique_ptr<ModelManager> modelMngr;
 
 	float frustumScale;
 	glm::mat4 cameraMatrix;

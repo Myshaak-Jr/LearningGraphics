@@ -1,61 +1,19 @@
-#include "GLObjectManager.h"
+#include "programManager.h"
 #include <fstream>
 #include <algorithm>
-
+#include <sstream>
+#include <iostream>
 
 // GL Object Manager
 
-GLObjectManager::~GLObjectManager() {
-	std::for_each(buffers.begin(), buffers.end(), [](const auto& p) { glDeleteBuffers(1, &p.second.buffer); });
-	std::for_each(meshes.begin(), meshes.end(), [](const auto& p) { glDeleteVertexArrays(1, &p.second.vao); });
+ProgramManager::~ProgramManager() {
 	std::for_each(shaderPrograms.begin(), shaderPrograms.end(), [](const auto& p) { glDeleteProgram(p.second.program); });
 }
 
-void GLObjectManager::addMesh(Uint32 id, Uint32 vertexBufferId, Uint32 elementBufferId, const std::vector<VertAttrPtr>& attrPtrs) {
-	if (meshes.find(id) != meshes.end()) {
+void ProgramManager::LoadShaderProgram(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaders, const std::vector<std::string>& uniformNames) {
+	if (shaderPrograms.find(name) != shaderPrograms.end()) {
 		std::stringstream ss;
-		ss << "Mesh with id " << id << " already exists";
-		throw std::runtime_error(ss.str());
-	}
-	
-	GLuint VAO;
-
-	glGenVertexArrays(1, &VAO);
-
-	glBindVertexArray(VAO);
-
-	Buffer vertexBuffer = getBuffer(vertexBufferId);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer.buffer);
-
-	// set vertex attribute pointers
-	for (int i = 0; i < attrPtrs.size(); i++) {
-		glEnableVertexAttribArray(i);
-		const auto& attrPtr = attrPtrs[i];
-		glVertexAttribPointer(i, attrPtr.size, attrPtr.type, attrPtr.normalized, attrPtr.stride, attrPtr.pointer);
-	}
-
-	Buffer elementBuffer = getBuffer(elementBufferId);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer.buffer);
-	
-	glBindVertexArray(0);
-
-	meshes.emplace(id, comps::mesh(VAO, elementBuffer.count));
-}
-
-const comps::mesh& GLObjectManager::getMesh(Uint32 id) const {
-	auto it = meshes.find(id);
-	if (it == meshes.end()) {
-		std::stringstream ss;
-		ss << "Vertex array with id " << id << " not found";
-		throw std::runtime_error(ss.str());
-	}
-	return it->second;
-}
-
-void GLObjectManager::addShaderProgram(Uint32 id, const std::vector<std::pair<GLenum, std::string>>& shaders, const std::vector<std::string>& uniformNames) {
-	if (shaderPrograms.find(id) != shaderPrograms.end()) {
-		std::stringstream ss;
-		ss << "Shader program with id " << id << " already exists";
+		ss << "Shader program with name " << name << " already exists";
 		throw std::runtime_error(ss.str());
 	}
 
@@ -75,30 +33,20 @@ void GLObjectManager::addShaderProgram(Uint32 id, const std::vector<std::pair<GL
 		shaderProgram.uniformLocations.emplace(name, location);
 	}
 
-	shaderPrograms.emplace(id, shaderProgram);
+	shaderPrograms.emplace(name, shaderProgram);
 }
 
-const comps::shaderProgram& GLObjectManager::getShaderProgram(Uint32 id) const {
-	auto it = shaderPrograms.find(id);
+const comps::shaderProgram& ProgramManager::getShaderProgram(const std::string& name) const {
+	auto it = shaderPrograms.find(name);
 	if (it == shaderPrograms.end()) {
 		std::stringstream ss;
-		ss << "Shader program with id " << id << " not found";
+		ss << "Shader program with name " << name << " not found";
 		throw std::runtime_error(ss.str());
 	}
 	return it->second;
 }
 
-const Buffer& GLObjectManager::getBuffer(Uint32 id) const {
-	auto it = buffers.find(id);
-	if (it == buffers.end()) {
-		std::stringstream ss;
-		ss << "Buffer with id " << id << " not found";
-		throw std::runtime_error(ss.str());
-	}
-	return it->second;
-}
-
-GLuint GLObjectManager::createShader(GLenum shaderType, const char* path) {
+GLuint ProgramManager::createShader(GLenum shaderType, const char* path) {
 	std::string strShader;
 	std::ifstream shaderFile;
 
@@ -172,7 +120,7 @@ GLuint GLObjectManager::createShader(GLenum shaderType, const char* path) {
 	return shader;
 }
 
-GLuint GLObjectManager::createProgram(std::vector<GLuint>& shaders) {
+GLuint ProgramManager::createProgram(std::vector<GLuint>& shaders) {
 	GLuint program = glCreateProgram();
 
 	for (auto shader : shaders) {
@@ -202,13 +150,3 @@ GLuint GLObjectManager::createProgram(std::vector<GLuint>& shaders) {
 
 	return program;
 }
-
-// Vertex Attribute Pointer
-
-VertAttrPtr::VertAttrPtr(GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer) :
-	size(size),
-	type(type),
-	normalized(normalized),
-	stride(stride),
-	pointer(pointer)
-{}

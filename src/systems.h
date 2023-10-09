@@ -5,7 +5,6 @@
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include "GLObjectManager.h"
 
 #include "comps/position.h"
 #include "comps/rotation.h"
