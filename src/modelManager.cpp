@@ -40,9 +40,9 @@ struct index_t_equal {
 	}
 };
 
-ModelManager::Mesh::Mesh(const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape) {
+Mesh::Mesh(const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape) {
 	name = shape.name;
-	std::cout << "Loading mesh " << name << std::endl;
+	std::cout << "Loading mesh '" << name << "'" << std::endl;
 
 	std::unordered_map<tinyobj::index_t, GLushort, index_t_hash, index_t_equal> indexTracker;
 	Uint32 numVertices = 0;
@@ -104,25 +104,31 @@ ModelManager::Mesh::Mesh(const tinyobj::attrib_t& attrib, const tinyobj::shape_t
 		index_offset += fv;
 	}
 
-	std::cout << "vertex data: " << std::endl;
-	for (const auto& vertex : vertices) {
-		std::cout << "\t" << vertex.vx << ", " << vertex.vy << ", " << vertex.vz << std::endl;
-	}
+	//std::cout << "vertex data: " << std::endl;
+	//for (const auto& vertex : vertices) {
+	//	std::cout << "\t" << vertex.vx << ", " << vertex.vy << ", " << vertex.vz << std::endl;
+	//}
 
-	std::cout << "index data: " << std::endl;
-	int i = 0;
-	for (const auto& index : indices) {
-		std::cout << index;
-		if ((++i) % 3 == 0) {
-			std::cout << "\n";
-		}
-		else {
-			std::cout << ", ";
-		}
-	}
+	//std::cout << "index data: " << std::endl;
+	//int i = 0;
+	//for (const auto& index : indices) {
+	//	std::cout << index;
+	//	if ((++i) % 3 == 0) {
+	//		std::cout << "\n";
+	//	}
+	//	else {
+	//		std::cout << ", ";
+	//	}
+	//}
 }
 
-comps::mesh ModelManager::Mesh::exportAsComponent() const {
+Mesh::Mesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<GLushort>& indices)
+	: name(name)
+	, vertices(vertices)
+	, indices(indices)
+{}
+
+comps::mesh Mesh::exportAsComponent() const {
 	comps::mesh mesh = {};
 
 	GLenum err;
@@ -176,7 +182,14 @@ comps::mesh ModelManager::Mesh::exportAsComponent() const {
 	return mesh;
 }
 
-ModelManager::Model::Model(const tinyobj::attrib_t& attrib, const std::vector<tinyobj::shape_t>& shapes, const std::vector<tinyobj::material_t>& materials) {
+Model::Model(
+	const std::string& name,
+	const tinyobj::attrib_t& attrib,
+	const std::vector<tinyobj::shape_t>& shapes,
+	const std::vector<tinyobj::material_t>& materials
+)
+	: name(name)
+{
 	// load meshes
 	for (const auto& shape : shapes) {
 		meshes.emplace(
@@ -189,7 +202,9 @@ ModelManager::Model::Model(const tinyobj::attrib_t& attrib, const std::vector<ti
 	// TODO: load materials
 }
 
-ModelManager::Model::~Model() {
+Model::Model(const std::string& name) : name(name) {}
+
+Model::~Model() {
 	for (auto& mesh : meshComps) {
 		glDeleteVertexArrays(1, &mesh.second.vao);
 		GLuint buffers[2] = { mesh.second.vbo, mesh.second.ebo };
@@ -197,7 +212,7 @@ ModelManager::Model::~Model() {
 	}
 }
 
-void ModelManager::Model::generateGLMeshes() {
+void Model::genAllMeshComps() {
 	meshComps.clear();
 	
 	for (const auto& mesh : meshes) {
@@ -205,7 +220,13 @@ void ModelManager::Model::generateGLMeshes() {
 	}
 }
 
-std::unique_ptr<std::unordered_map<std::string, entt::entity>> ModelManager::Model::generateEntities(entt::entity root, const std::unique_ptr<entt::registry>& registry) {
+void Model::genMeshComp(const std::string& name) {
+	assert(meshes.find(name) != meshes.end());
+
+	meshComps.emplace(name, meshes.at(name).exportAsComponent());
+}
+
+std::unique_ptr<std::unordered_map<std::string, entt::entity>> Model::generateEntities(entt::entity root, const std::unique_ptr<entt::registry>& registry) {
 	auto entities = std::make_unique<std::unordered_map<std::string, entt::entity>>();
 	
 	for (const auto& mesh : meshComps) {
@@ -224,14 +245,20 @@ std::unique_ptr<std::unordered_map<std::string, entt::entity>> ModelManager::Mod
 	return std::move(entities);
 }
 
-void ModelManager::LoadModel(const std::string& name, const char* filename, const char* materialPath, bool triangulate ) {
-	if (models.find(name) != models.end()) {
+void Model::addMesh(const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<GLushort>& indices) {
+	if (meshes.find(meshName) != meshes.end()) {
 		std::stringstream ss;
-		ss << "Model with name " << name << " already exists.";
+		ss << "Mesh with name " << meshName << " already exists in model " << name << "." << std::endl;
 		throw std::runtime_error(ss.str());
 	}
-	
-	std::cout << "Loading " << filename << std::endl;
+
+	meshes.emplace(std::piecewise_construct, std::forward_as_tuple(meshName), std::forward_as_tuple(meshName, vertices, indices));
+}
+
+void ModelManager::LoadModel(const std::string& name, const char* filename, const char* materialPath, bool triangulate ) {
+	assertNotExisting(name);
+
+	std::cout << "Loading model '" << filename << "'" << std::endl;
 
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -259,21 +286,41 @@ void ModelManager::LoadModel(const std::string& name, const char* filename, cons
 		std::forward_as_tuple(attrib, shapes, materials)
 	);
 
-	genMeshComps(name);
+	genAllMeshComps(name);
+}
+
+void ModelManager::AddModel(const std::string& name) {
+	assertNotExisting(name);
+
+	models.emplace(name, name);
 }
 
 void ModelManager::assertExisting(const std::string& name) const {
 	if (models.find(name) != models.end()) return;
 	
 	std::stringstream ss;
-	ss << "Model with " << name << " not found.";
+	ss << "Model " << name << " not found.";
 	throw std::runtime_error(ss.str());
 }
 
-void ModelManager::genMeshComps(const std::string& name) {
+void ModelManager::assertNotExisting(const std::string& name) const {
+	if (models.find(name) == models.end()) return;
+	
+	std::stringstream ss;
+	ss << "Model " << name << " already exists.";
+	throw std::runtime_error(ss.str());
+}
+
+void ModelManager::genAllMeshComps(const std::string& name) {
 	assertExisting(name);
 	
-	models.at(name).generateGLMeshes();
+	models.at(name).genAllMeshComps();
+}
+
+void ModelManager::genMeshComp(const std::string& model, const std::string& mesh) {
+	assertExisting(model);
+
+	models.at(model).genMeshComp(mesh);
 }
 
 std::unique_ptr<std::unordered_map<std::string, entt::entity>>
@@ -283,4 +330,15 @@ ModelManager::GenEntities(
 	assertExisting(name);
 
 	return std::move(models.at(name).generateEntities(root, registry));
+}
+
+void ModelManager::AddMeshToModel(
+	const std::string& modelName,
+	const std::string& meshName,
+	const std::vector<Vertex>& vertices,
+	const std::vector<GLushort>& indices
+) {
+	assertExisting(modelName);
+
+	models.at(modelName).addMesh(meshName, vertices, indices);
 }
