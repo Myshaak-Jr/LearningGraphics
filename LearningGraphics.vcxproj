@@ -143,9 +143,7 @@
     <ClCompile Include="include\glad\glad.c" />
     <ClCompile Include="include\tinyobj\tiny_obj_loader.cpp" />
     <ClCompile Include="src\app.cpp" />
-    <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\factories.cpp" />
-    <ClCompile Include="src\myMath.c" />
     <ClCompile Include="src\programManager.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\modelManager.cpp" />
@@ -154,10 +152,7 @@
   <ItemGroup>
     <ClInclude Include="include\glad\glad.h" />
     <ClInclude Include="include\glad\khrplatform.h" />
-    <ClInclude Include="src\myMath.h" />
-    <ClInclude Include="src\terrainGen.h" />
     <ClInclude Include="src\app.h" />
-    <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\comps\child.h" />
     <ClInclude Include="src\comps\color.h" />
     <ClInclude Include="src\comps\dynamicallyScaled.h" />
