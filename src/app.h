@@ -10,12 +10,14 @@
 #include "programManager.h"
 #include "modelManager.h"
 #include "camera.h"
+#include "terrain.h"
 
 
 class App {
 private:
 	bool running;
-	
+	bool freeCameraMode;
+
 	std::unique_ptr<entt::registry> registry;
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 	SDL_GLContext context;
@@ -24,6 +26,8 @@ private:
 	std::unique_ptr<ModelManager> modelMngr;
 
 	std::unique_ptr<Camera> camera;
+
+	std::unique_ptr<Terrain> terrain;
 
 	int fps;
 

@@ -145,10 +145,12 @@
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\factories.cpp" />
+    <ClCompile Include="src\perlin.cpp" />
     <ClCompile Include="src\programManager.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\modelManager.cpp" />
     <ClCompile Include="src\systems.cpp" />
+    <ClCompile Include="src\terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\glad\glad.h" />
@@ -169,13 +171,11 @@
     <ClInclude Include="src\comps\transform.h" />
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\factories.h" />
+    <ClInclude Include="src\perlin.h" />
     <ClInclude Include="src\programManager.h" />
     <ClInclude Include="src\modelManager.h" />
     <ClInclude Include="src\systems.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="shaders\fragment.glsl" />
-    <None Include="shaders\vertex.glsl" />
+    <ClInclude Include="src\terrain.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

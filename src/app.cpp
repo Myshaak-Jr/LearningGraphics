@@ -15,6 +15,8 @@
 
 App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	running = false;
+	freeCameraMode = true;
+
 	fps = 60;
 
 	setGLAttributes();
@@ -25,6 +27,7 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	modelMngr = std::make_unique<ModelManager>();
 	registry = std::make_unique<entt::registry>();
 	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 0.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
+	terrain = std::make_unique<Terrain>(500.0f, 500.0f, 1000, 1.0f);
 }
 
 App::~App() {
@@ -53,8 +56,8 @@ void App::createWindow(int width, int height) {
 		exit(1);
 	}
 
-	// Capture mouse
-	SDL_SetRelativeMouseMode(SDL_TRUE);
+	SDL_SetRelativeMouseMode((SDL_bool)freeCameraMode);
+	SDL_CaptureMouse((SDL_bool)freeCameraMode);
 }
 
 void App::createContext(int width, int height) {
@@ -88,22 +91,41 @@ void App::loadScene() {
 
 void App::loadGLObjects() {
 	// load shader programs
-	prgMngr->LoadShaderProgram("noLights",
+	/*prgMngr->LoadShaderProgram("noLights",
 		{ { GL_VERTEX_SHADER, "./shaders/vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/fragment.glsl" } },
 		{ "model", "projection", "view", "aColor" }
+	);*/
+
+	prgMngr->LoadShaderProgram("terrain",
+		{ { GL_VERTEX_SHADER, "./shaders/terrain-vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/terrain-fragment.glsl" } },
+		{ "model", "projection", "view" }
 	);
 
 	// load models
-	modelMngr->LoadModel("tree", "models/tree.obj", "models/");
-	modelMngr->LoadModel("temple", "models/temple.obj", "models/");
+	/*modelMngr->LoadModel("tree", "models/tree.obj", "models/");
+	modelMngr->LoadModel("temple", "models/temple.obj", "models/");*/
+	terrain->ExportAsModel("terrain", modelMngr);
 }
 
 void App::loadEntities() {
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
-	factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
+	auto terrainEntity = registry->create();
+
+	registry->emplace<comps::position>(terrainEntity);
+	registry->emplace<comps::rotation>(terrainEntity);
+	registry->emplace<comps::scale>(terrainEntity);
+	registry->emplace<comps::transform>(terrainEntity);
+
+	auto offspring = modelMngr->GenEntities("terrain", terrainEntity, registry);
+
+	for (const auto& child : *offspring) {
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("terrain"));
+	}
+
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	//factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
 }
 
 void App::run() {
@@ -143,7 +165,9 @@ void App::handleEvents() {
 			break;
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_ESCAPE) {
-				running = false;
+				freeCameraMode = !freeCameraMode;
+				SDL_SetRelativeMouseMode((SDL_bool)freeCameraMode);
+				SDL_CaptureMouse((SDL_bool)freeCameraMode);
 			}
 			break;
 		case SDL_WINDOWEVENT:
@@ -155,10 +179,10 @@ void App::handleEvents() {
 			}
 			break;
 		case SDL_MOUSEMOTION:
-			camera->mouseCallback(event.motion.xrel, event.motion.yrel);
+			if (freeCameraMode) camera->mouseCallback(event.motion.xrel, event.motion.yrel);
 			break;
 		case SDL_MOUSEWHEEL:
-			camera->scrollCallback(event.wheel.preciseY);
+			if (freeCameraMode) camera->scrollCallback(event.wheel.preciseY);
 			break;
 		default:
 			break;
@@ -167,7 +191,7 @@ void App::handleEvents() {
 }
 
 void App::update(float dt) {
-	camera->update(dt);
+	if (freeCameraMode) camera->update(dt);
 
 	systems::orbitPos(registry);
 

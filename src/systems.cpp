@@ -134,9 +134,9 @@ void systems::calcAbsoluteTransform(const std::unique_ptr<entt::registry>& regis
 }
 
 void systems::render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
-	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform, const comps::color>();
+	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform>();
 
-	for (auto [entity, mesh, prg, transform, color] : view.each()) {
+	for (auto [entity, mesh, prg, transform] : view.each()) {
 		GLenum err;
 		while (glGetError() != GL_NO_ERROR);
 
@@ -146,9 +146,13 @@ void systems::render(const std::unique_ptr<entt::registry>& registry, const std:
 		glUniformMatrix4fv(prg.uniformLocations.at("model"), 1, GL_FALSE, glm::value_ptr(transform.matrix));
 		glUniformMatrix4fv(prg.uniformLocations.at("view"), 1, GL_FALSE, glm::value_ptr(camera->getView()));
 		glUniformMatrix4fv(prg.uniformLocations.at("projection"), 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
-		glUniform3f(prg.uniformLocations.at("aColor"), color.r, color.g, color.b);
 
-		glDrawElements(GL_TRIANGLES, mesh.elementCount, GL_UNSIGNED_SHORT, 0);
+		if (registry->all_of<comps::color>(entity)) {
+			const auto& color = registry->get<comps::color>(entity);
+			glUniform3f(prg.uniformLocations.at("aColor"), color.r, color.g, color.b);
+		}
+
+		glDrawElements(GL_TRIANGLES, mesh.elementCount, mesh.indexType, 0);
 
 		glBindVertexArray(0);
 		glUseProgram(0);

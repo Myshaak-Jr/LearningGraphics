@@ -9,5 +9,6 @@ namespace comps {
 		GLuint vbo;
 		GLuint ebo;
 		GLsizei elementCount;
+		GLenum indexType;
 	};
 }
