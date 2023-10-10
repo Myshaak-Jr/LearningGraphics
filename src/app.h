@@ -9,6 +9,7 @@
 
 #include "programManager.h"
 #include "modelManager.h"
+#include "camera.h"
 
 
 class App {
@@ -18,21 +19,17 @@ private:
 	std::unique_ptr<entt::registry> registry;
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 	SDL_GLContext context;
+	
 	std::unique_ptr<ProgramManager> prgMngr;
 	std::unique_ptr<ModelManager> modelMngr;
 
-	float frustumScale;
-	glm::mat4 cameraMatrix;
+	std::unique_ptr<Camera> camera;
 
 	int fps;
 
 	void setGLAttributes();
 	void createWindow(int width, int height);
 	void createContext(int width, int height);
-
-	float calcFrustumScale(float fovDgr);
-
-	void loadScene();
 
 	void loadGLObjects();
 	
@@ -49,5 +46,6 @@ public:
 	App(int width, int height);
 	~App();
 
+	void loadScene();
 	void run();
 };

@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
+#include "camera.h"
+
 #include "comps/position.h"
 #include "comps/rotation.h"
 #include "comps/movedByKeyboard.h"
@@ -29,7 +31,7 @@ namespace systems {
 	void clearTransformCache(const std::unique_ptr<entt::registry>& registry);
 	void calcAbsoluteTransform(const std::unique_ptr<entt::registry>& registry);
 
-	void render(const std::unique_ptr<entt::registry>& registry, const glm::mat4& cameraMatrix);
+	void render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera);
 }
 
 template <Axis A>

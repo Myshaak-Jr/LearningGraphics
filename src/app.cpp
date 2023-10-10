@@ -24,8 +24,7 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	prgMngr = std::make_unique<ProgramManager>();
 	modelMngr = std::make_unique<ModelManager>();
 	registry = std::make_unique<entt::registry>();
-
-	loadScene();
+	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 0.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
 }
 
 App::~App() {
@@ -53,6 +52,9 @@ void App::createWindow(int width, int height) {
 		std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
 		exit(1);
 	}
+
+	// Capture mouse
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
 void App::createContext(int width, int height) {
@@ -62,7 +64,7 @@ void App::createContext(int width, int height) {
 	}
 	gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 
-	resize(width, height);
+	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 
 	// Use v-sync
 	SDL_GL_SetSwapInterval(1);
@@ -79,67 +81,29 @@ void App::createContext(int width, int height) {
 	//glEnable(GL_DEPTH_CLAMP);
 }
 
-float App::calcFrustumScale(float fovDgr) {
-	const float degToRad = 3.14159f * 2.0f / 360.0f;
-	float fovRad = fovDgr * degToRad;
-	return 1.0f / tan(fovRad / 2.0f);
-}
-
 void App::loadScene() {
 	loadGLObjects();
 	loadEntities();
-
-	float zNear = 0.01f, zFar = 1000.0f;
-	frustumScale = calcFrustumScale(45);
-	cameraMatrix = glm::mat4(0.0f);
-
-	cameraMatrix[0][0] = frustumScale;
-	cameraMatrix[1][1] = frustumScale;
-	cameraMatrix[2][2] = (zFar + zNear) / (zNear - zFar);
-	cameraMatrix[3][2] = (2 * zFar * zNear) / (zNear - zFar);
-	cameraMatrix[2][3] = -1.0f;
 }
 
 void App::loadGLObjects() {
 	// load shader programs
 	prgMngr->LoadShaderProgram("noLights",
 		{ { GL_VERTEX_SHADER, "./shaders/vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/fragment.glsl" } },
-		{ "model", "projection", "aColor" }
+		{ "model", "projection", "view", "aColor" }
 	);
 
 	// load models
-	modelMngr->LoadModel("cube", "models/cube.obj", "models/");
+	modelMngr->LoadModel("tree", "models/tree.obj", "models/");
+	modelMngr->LoadModel("temple", "models/temple.obj", "models/");
 }
 
 void App::loadEntities() {
-	auto cube = registry->create();
-	
-	registry->emplace<comps::position>(cube, glm::vec3(0.0f, 0.0f, -20.0f));
-	registry->emplace<comps::rotation>(cube);
-	registry->emplace<comps::scale>(cube);
-	registry->emplace<comps::transform>(cube);
-	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(cube, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f);
-	registry->emplace<comps::rotatedByKeyboard<EAngle::PITCH>>(cube, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, 90.0f, -89.9f, 89.9f);
-
-	auto cubeOffspring = modelMngr->GenEntities("cube", cube, registry);
-
-	for (const auto& child : *cubeOffspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("noLights"));
-	}
-
-	entt::entity front = cubeOffspring->at("front");
-	entt::entity right = cubeOffspring->at("right");
-	entt::entity back = cubeOffspring->at("back");
-	entt::entity left = cubeOffspring->at("left");
-	entt::entity top = cubeOffspring->at("top");
-	entt::entity bottom = cubeOffspring->at("bottom");
-	
-	registry->emplace<comps::color>(front,  HEX_COLOR(26547C));
-	registry->emplace<comps::color>(right,  HEX_COLOR(EF476F));
-	registry->emplace<comps::color>(back,   HEX_COLOR(FFD166));
-	registry->emplace<comps::color>(left,   HEX_COLOR(06D6A0));
-	registry->emplace<comps::color>(top,    HEX_COLOR(FFFCF9));
-	registry->emplace<comps::color>(bottom, HEX_COLOR(8DAA9D));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
 }
 
 void App::run() {
@@ -186,12 +150,25 @@ void App::handleEvents() {
 			if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
 				resize(event.window.data1, event.window.data2);
 			}
+			else if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+				running = false;
+			}
+			break;
+		case SDL_MOUSEMOTION:
+			camera->mouseCallback(event.motion.xrel, event.motion.yrel);
+			break;
+		case SDL_MOUSEWHEEL:
+			camera->scrollCallback(event.wheel.preciseY);
+			break;
+		default:
 			break;
 		}
 	}
 }
 
 void App::update(float dt) {
+	camera->update(dt);
+
 	systems::orbitPos(registry);
 
 	systems::keyboardRotate(registry, dt);
@@ -208,16 +185,13 @@ void App::render() {
 	systems::calcTransforms(registry);
 	systems::clearTransformCache(registry);
 	systems::calcAbsoluteTransform(registry);
-	systems::render(registry, cameraMatrix);
+	systems::render(registry, camera);
 
 	SDL_GL_SwapWindow(window.get());
 }
 
 void App::resize(int width, int height) {
-	float aspectRatio = (float)width / height;
-
-	cameraMatrix[0][0] = frustumScale / (width >= height ? aspectRatio : 1.0f);
-	cameraMatrix[1][1] = frustumScale * (width < height ? aspectRatio : 1.0f);
+	camera->resizeCallback(width, height);
 
 	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 }
