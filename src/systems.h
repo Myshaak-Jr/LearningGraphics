@@ -7,9 +7,10 @@
 #include <glm/gtx/euler_angles.hpp>
 
 #include "camera.h"
+#include "programManager.h"
 
 #include "comps/position.h"
-#include "comps/rotation.h"
+#include "comps/orientation.h"
 #include "comps/movedByKeyboard.h"
 #include "comps/rotatedByKeyboard.h"
 
@@ -31,7 +32,7 @@ namespace systems {
 	void clearTransformCache(const std::unique_ptr<entt::registry>& registry);
 	void calcAbsoluteTransform(const std::unique_ptr<entt::registry>& registry);
 
-	void render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera);
+	void render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::unique_ptr<ProgramManager>& prgMngr);
 }
 
 template <Axis A>
@@ -56,22 +57,10 @@ void systems::keyboardMoveInAxis(const std::unique_ptr<entt::registry>& registry
 		}
 
 
-		if (registry->all_of<comps::rotation>(entity)) {
-			const comps::rotation& rot = registry->get<comps::rotation>(entity);
+		if (registry->all_of<comps::orientation>(entity)) {
+			const comps::orientation& rot = registry->get<comps::orientation>(entity);
 
-			switch (A) {
-			case Axis::X:
-				vector = glm::eulerAngleYZ(glm::radians(rot.yaw), glm::radians(rot.roll)) * glm::vec4(vector, 1.0f);
-				break;
-			case Axis::Y:
-				vector = glm::eulerAngleXZ(glm::radians(rot.pitch), glm::radians(rot.roll)) * glm::vec4(vector, 1.0f);
-				break;
-			case Axis::Z:
-				vector = glm::eulerAngleYX(glm::radians(rot.yaw), glm::radians(rot.pitch)) * glm::vec4(vector, 1.0f);
-				break;
-			default:
-				break;
-			}
+			vector = glm::mat4_cast(rot.orient) * glm::vec4(vector, 1.0f);
 		}
 
 		const Uint8* state = SDL_GetKeyboardState(NULL);
@@ -88,39 +77,43 @@ void systems::keyboardMoveInAxis(const std::unique_ptr<entt::registry>& registry
 
 template <EAngle A>
 void systems::keyboardRotateAroundAngle(const std::unique_ptr<entt::registry>& registry, float dt) {
-	auto view = registry->view<comps::rotation, const comps::rotatedByKeyboard<A>>();
+	auto view = registry->view<comps::orientation, const comps::rotatedByKeyboard<A>>();
 
 	for (auto [entity, rot, ctrl] : view.each()) {
 		const Uint8* state = SDL_GetKeyboardState(NULL);
 		const float speed = state[SDL_SCANCODE_LCTRL] ? ctrl.speed * 3.0f : ctrl.speed;
 
-		float* eulerAngle = &rot.yaw;;
+		
+		glm::vec3 axis{};
+
 		switch (A) {
 		case EAngle::YAW:
-			eulerAngle = &rot.yaw;
+			axis = VEC_UP;
 			break;
 		case EAngle::PITCH:
-			eulerAngle = &rot.pitch;
+			axis = VEC_RIGHT;
 			break;
 		case EAngle::ROLL:
-			eulerAngle = &rot.roll;
+			axis = VEC_FORWARD;
 			break;
 		default:
 			break;
 		}
 
+		glm::quat offset = glm::angleAxis(0.0f, axis);
+
 		if (state[ctrl.inc]) {
-			*eulerAngle += speed * dt;
+			offset = glm::angleAxis(glm::radians(speed * dt), axis);
 		}
 		if (state[ctrl.dec]) {
-			*eulerAngle -= speed * dt;
+			offset = glm::angleAxis(glm::radians(-speed * dt), axis);
 		}
 
-		if (ctrl.clamped) {
-			*eulerAngle = glm::clamp(*eulerAngle, ctrl.minVal, ctrl.maxVal);
+		if (ctrl.rightMultiply) {
+			rot.orient = rot.orient * offset;
 		}
 		else {
-			*eulerAngle = glm::mod(*eulerAngle, 360.0f);
+			rot.orient = offset * rot.orient;
 		}
 	}
 }

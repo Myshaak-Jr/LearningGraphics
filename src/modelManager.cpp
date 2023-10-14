@@ -2,7 +2,7 @@
 
 #include "comps/child.h"
 #include "comps/position.h"
-#include "comps/rotation.h"
+#include "comps/orientation.h"
 #include "comps/scale.h"
 #include "comps/transform.h"
 
@@ -95,7 +95,7 @@ std::unique_ptr<std::unordered_map<std::string, entt::entity>> Model::generateEn
 
 		registry->emplace<comps::child>(entity, root);
 		registry->emplace<comps::position>(entity);
-		registry->emplace<comps::rotation>(entity);
+		registry->emplace<comps::orientation>(entity);
 		registry->emplace<comps::scale>(entity);
 		registry->emplace<comps::transform>(entity);
 		registry->emplace<comps::mesh>(entity, mesh.second);

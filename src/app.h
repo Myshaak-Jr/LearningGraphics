@@ -27,7 +27,7 @@ private:
 
 	std::unique_ptr<Camera> camera;
 
-	std::unique_ptr<Terrain> terrain;
+	//std::unique_ptr<Terrain> terrain;
 
 	int fps;
 

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "../color.h"
+
 namespace comps {
-	struct color {
-		float r, g, b;
+	struct material {
+		color::RGB c;
 	};
 }

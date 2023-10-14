@@ -2,7 +2,7 @@
 
 
 
-Perlin::Perlin(float scale, uint32_t seed) : scale(scale), seed(seed) {}
+Perlin::Perlin(uint32_t seed) : seed(seed) {}
 
 uint32_t Perlin::hashPos(glm::ivec2 pos) {
 	uint32_t x = std::hash<int>{}(pos.x);
@@ -27,8 +27,6 @@ glm::vec2 Perlin::calcGradientVec(glm::ivec2 pos) {
 
 
 float Perlin::get(glm::vec2 position) {
-	position /= scale;
-
 	const glm::ivec2 top_left = glm::floor(position);
 
 	float dotProducts[4] = {};

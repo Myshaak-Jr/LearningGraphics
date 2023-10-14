@@ -19,6 +19,7 @@ public:
 	ProgramManager() = default;
 	~ProgramManager();
 
-	void LoadShaderProgram(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaders, const std::vector<std::string>& uniformNames);
+	void LoadShaderProgram(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaders, bool requireLights);
 	const comps::shaderProgram& getShaderProgram(const std::string& name) const;
+	std::vector<comps::shaderProgram> getShaderPrograms();
 };

@@ -8,6 +8,12 @@
 namespace comps {
 	struct shaderProgram {
 		GLuint program;
-		std::unordered_map<std::string, GLint> uniformLocations;
+
+		GLint modelUnifLoc;
+		GLint viewUnifLoc;
+		GLint projUnifLoc;
+		GLint normalUnifLoc;
+
+		bool requireLights;
 	};
 }

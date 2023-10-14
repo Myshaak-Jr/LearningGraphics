@@ -6,7 +6,6 @@
 
 class Perlin {
 private:
-	float scale;
 	uint32_t seed;
 
 	uint32_t hashPos(glm::ivec2 pos);
@@ -14,7 +13,7 @@ private:
 	glm::vec2 calcGradientVec(glm::ivec2 pos);
 
 public:
-	Perlin(float scale, uint32_t seed);
+	Perlin(uint32_t seed);
 	~Perlin() = default;
 
 	float get(glm::vec2 position);

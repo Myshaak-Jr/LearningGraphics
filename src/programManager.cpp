@@ -10,14 +10,14 @@ ProgramManager::~ProgramManager() {
 	std::for_each(shaderPrograms.begin(), shaderPrograms.end(), [](const auto& p) { glDeleteProgram(p.second.program); });
 }
 
-void ProgramManager::LoadShaderProgram(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaders, const std::vector<std::string>& uniformNames) {
+void ProgramManager::LoadShaderProgram(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaders, bool requireLights) {
 	if (shaderPrograms.find(name) != shaderPrograms.end()) {
 		std::stringstream ss;
 		ss << "Shader program with name " << name << " already exists";
 		throw std::runtime_error(ss.str());
 	}
 
-	comps::shaderProgram shaderProgram;
+	comps::shaderProgram shaderProgram{};
 
 	// compile the program
 	std::vector<GLuint> compiledShaders;
@@ -27,11 +27,12 @@ void ProgramManager::LoadShaderProgram(const std::string& name, const std::vecto
 	shaderProgram.program = createProgram(compiledShaders);
 	std::for_each(compiledShaders.begin(), compiledShaders.end(), glDeleteShader);
 
-	// set up the uniform locations
-	for (const std::string& name : uniformNames) {
-		GLint location = glGetUniformLocation(shaderProgram.program, name.c_str());
-		shaderProgram.uniformLocations.emplace(name, location);
-	}
+	shaderProgram.modelUnifLoc = glGetUniformLocation(shaderProgram.program, "model");
+	shaderProgram.viewUnifLoc = glGetUniformLocation(shaderProgram.program, "view");
+	shaderProgram.projUnifLoc = glGetUniformLocation(shaderProgram.program, "proj");
+	shaderProgram.normalUnifLoc = glGetUniformLocation(shaderProgram.program, "normal");
+
+	shaderProgram.requireLights = requireLights;
 
 	shaderPrograms.emplace(name, shaderProgram);
 }
@@ -44,6 +45,16 @@ const comps::shaderProgram& ProgramManager::getShaderProgram(const std::string& 
 		throw std::runtime_error(ss.str());
 	}
 	return it->second;
+}
+
+std::vector<comps::shaderProgram> ProgramManager::getShaderPrograms() {
+	std::vector<comps::shaderProgram> result;
+	
+	for (const auto& shaderProgram : shaderPrograms) {
+		result.push_back(shaderProgram.second);
+	}
+
+	return result;
 }
 
 GLuint ProgramManager::createShader(GLenum shaderType, const char* path) {

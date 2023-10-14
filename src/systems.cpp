@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stack>
 #include <unordered_set>
+#include <sstream>
 
 #include "comps/child.h"
 #include "comps/scale.h"
@@ -13,6 +14,7 @@
 #include "comps/mesh.h"
 #include "comps/shaderProgram.h"
 #include "comps/color.h"
+#include "comps/dirLight.h"
 
 
 void systems::orbitPos(const std::unique_ptr<entt::registry>& registry) {
@@ -54,12 +56,12 @@ void systems::dynamicallyScale(const std::unique_ptr<entt::registry>& registry) 
 /* Render */
 
 void systems::calcTransforms(const std::unique_ptr<entt::registry>& registry) {
-	auto view = registry->view<comps::transform, const comps::position, const comps::rotation, const comps::scale>();
+	auto view = registry->view<comps::transform, const comps::position, const comps::orientation, const comps::scale>();
 
 	for (auto [e, transform, pos, rot, scl] : view.each()) {
 		transform.matrix =
 			  glm::translate(glm::mat4(1.0f), pos.pos + rot.center)
-			* glm::eulerAngleYXZ(glm::radians(rot.yaw), glm::radians(rot.pitch), glm::radians(rot.roll))
+			* glm::mat4_cast(rot.orient)
 			* glm::translate(glm::mat4(1.0f), -rot.center)
 			* glm::scale(glm::mat4(1.0f), scl.scl);
 	}
@@ -133,32 +135,100 @@ void systems::calcAbsoluteTransform(const std::unique_ptr<entt::registry>& regis
 	}
 }
 
-void systems::render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
-	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform>();
+void setDirLightUniforms(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<ProgramManager>& prgMngr) {
+	auto view = registry->view<const comps::dirLight>();
 
+	for (const auto& prg : prgMngr->getShaderPrograms()) {
+		if (!prg.requireLights) continue;
+		glUseProgram(prg.program);
+
+		int i = 0;
+
+		for (auto [entity, light] : view.each()) {
+			std::stringstream ss;
+			ss << "dirLights[" << i++ << "]";
+			std::string locName = ss.str();
+
+			glm::vec3 dir = glm::normalize(light.baseDir);
+
+			if (registry->all_of<comps::orientation>(entity)) {
+				const comps::orientation& orient = registry->get<comps::orientation>(entity);
+				dir = orient.orient * dir;
+			}
+
+
+			GLint directionLoc = glGetUniformLocation(prg.program, (locName + ".dir").c_str());
+			GLint diffuseLoc = glGetUniformLocation(prg.program, (locName + ".diffuse").c_str());
+
+			if (directionLoc != -1) {
+				glUniform3fv(directionLoc, 1, glm::value_ptr(dir));
+			}
+			if (directionLoc != -1) {
+				glUniform3fv(diffuseLoc, 1, reinterpret_cast<const float*>(&light.diffuse));
+			}
+
+			GLenum err;
+			while ((err = glGetError()) != GL_NO_ERROR) {
+				std::cerr << "OpenGL error (during setting dir lights): " << err << std::endl;
+			}
+		}
+		glUseProgram(0);
+	}
+}
+
+
+void setLightUniforms(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<ProgramManager>& prgMngr) {
+	setDirLightUniforms(registry, prgMngr);
+}
+
+void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
+	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform>();
 	for (auto [entity, mesh, prg, transform] : view.each()) {
 		GLenum err;
-		while (glGetError() != GL_NO_ERROR);
 
 		glUseProgram(prg.program);
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			std::cerr << "OpenGL error (glUseProgram): " << err << std::endl;
+		}
 		glBindVertexArray(mesh.vao);
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			std::cerr << "OpenGL error (glBindVertexArray): " << err << std::endl;
+		}
 
-		glUniformMatrix4fv(prg.uniformLocations.at("model"), 1, GL_FALSE, glm::value_ptr(transform.matrix));
-		glUniformMatrix4fv(prg.uniformLocations.at("view"), 1, GL_FALSE, glm::value_ptr(camera->getView()));
-		glUniformMatrix4fv(prg.uniformLocations.at("projection"), 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
+		glUniformMatrix4fv(prg.modelUnifLoc, 1, GL_FALSE, glm::value_ptr(transform.matrix));
+		glUniformMatrix4fv(prg.viewUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getView()));
+		glUniformMatrix4fv(prg.projUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			std::cerr << "OpenGL error (during setting matrices): " << err << std::endl;
+		}
 
-		if (registry->all_of<comps::color>(entity)) {
-			const auto& color = registry->get<comps::color>(entity);
-			glUniform3f(prg.uniformLocations.at("aColor"), color.r, color.g, color.b);
+		if (prg.requireLights) {
+			glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(camera->getView() * transform.matrix)));
+			glUniformMatrix3fv(prg.normalUnifLoc, 1, GL_FALSE, glm::value_ptr(normalMat));
+			while ((err = glGetError()) != GL_NO_ERROR) {
+				std::cerr << "OpenGL error (during setting normal matrix): " << err << std::endl;
+			}
+		}
+
+		if (registry->all_of<comps::material>(entity)) {
+			const auto& color = registry->get<comps::material>(entity);
+			glUniform3fv(glGetUniformLocation(prg.program, "aColor"), 1, reinterpret_cast<const float*>(&color.c));
+			while ((err = glGetError()) != GL_NO_ERROR) {
+				std::cerr << "OpenGL error (during setting aColor): " << err << std::endl;
+			}
 		}
 
 		glDrawElements(GL_TRIANGLES, mesh.elementCount, mesh.indexType, 0);
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			std::cerr << "OpenGL error (during render): " << err << std::endl;
+		}
 
 		glBindVertexArray(0);
 		glUseProgram(0);
-
-		while ((err = glGetError()) != GL_NO_ERROR) {
-			std::cerr << "OpenGL error: " << err << std::endl;
-		}
 	}
+}
+
+void systems::render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::unique_ptr<ProgramManager>& prgMngr) {
+	setLightUniforms(registry, prgMngr);
+	renderEntities(registry, camera);
 }

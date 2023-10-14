@@ -27,7 +27,7 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	modelMngr = std::make_unique<ModelManager>();
 	registry = std::make_unique<entt::registry>();
 	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 0.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
-	terrain = std::make_unique<Terrain>(500.0f, 500.0f, 1000, 1.0f);
+	//terrain = std::make_unique<Terrain>(500.0f, 500.0f, 500, 3.0f);
 }
 
 App::~App() {
@@ -91,41 +91,33 @@ void App::loadScene() {
 
 void App::loadGLObjects() {
 	// load shader programs
-	/*prgMngr->LoadShaderProgram("noLights",
+	prgMngr->LoadShaderProgram("diffuse",
 		{ { GL_VERTEX_SHADER, "./shaders/vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/fragment.glsl" } },
-		{ "model", "projection", "view", "aColor" }
-	);*/
+		true
+	);
 
 	prgMngr->LoadShaderProgram("terrain",
 		{ { GL_VERTEX_SHADER, "./shaders/terrain-vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/terrain-fragment.glsl" } },
-		{ "model", "projection", "view" }
+		false
 	);
 
 	// load models
-	/*modelMngr->LoadModel("tree", "models/tree.obj", "models/");
-	modelMngr->LoadModel("temple", "models/temple.obj", "models/");*/
-	terrain->ExportAsModel("terrain", modelMngr);
+	modelMngr->LoadModel("tree", "models/tree.obj", "models/");
+	modelMngr->LoadModel("temple", "models/temple.obj", "models/");
+	modelMngr->LoadModel("cube", "models/cube.obj", "models/");
 }
 
 void App::loadEntities() {
-	auto terrainEntity = registry->create();
+	factories::createDirLight(registry, color::RGB("#FF7777"), glm::vec3(0.0f, 15.0f, 0.0f));
+	factories::createDirLight(registry, color::RGB("#77FF77"), glm::vec3(360.0f / 3.0f, 15.0f, 0.0f));
+	factories::createDirLight(registry, color::RGB("#7777FF"), glm::vec3(360.0f * 2.0f / 3.0f, 15.0f, 0.0f));
 
-	registry->emplace<comps::position>(terrainEntity);
-	registry->emplace<comps::rotation>(terrainEntity);
-	registry->emplace<comps::scale>(terrainEntity);
-	registry->emplace<comps::transform>(terrainEntity);
-
-	auto offspring = modelMngr->GenEntities("terrain", terrainEntity, registry);
-
-	for (const auto& child : *offspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("terrain"));
-	}
-
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
-	//factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	
+	auto temple = factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
 }
 
 void App::run() {
@@ -209,7 +201,7 @@ void App::render() {
 	systems::calcTransforms(registry);
 	systems::clearTransformCache(registry);
 	systems::calcAbsoluteTransform(registry);
-	systems::render(registry, camera);
+	systems::render(registry, camera, prgMngr);
 
 	SDL_GL_SwapWindow(window.get());
 }

@@ -144,6 +144,7 @@
     <ClCompile Include="include\tinyobj\tiny_obj_loader.cpp" />
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\camera.cpp" />
+    <ClCompile Include="src\color.cpp" />
     <ClCompile Include="src\factories.cpp" />
     <ClCompile Include="src\perlin.cpp" />
     <ClCompile Include="src\programManager.cpp" />
@@ -157,15 +158,17 @@
     <ClInclude Include="include\glad\khrplatform.h" />
     <ClInclude Include="src\app.h" />
     <ClInclude Include="src\camera.h" />
+    <ClInclude Include="src\color.h" />
     <ClInclude Include="src\comps\child.h" />
     <ClInclude Include="src\comps\color.h" />
+    <ClInclude Include="src\comps\dirLight.h" />
     <ClInclude Include="src\comps\dynamicallyScaled.h" />
     <ClInclude Include="src\comps\mesh.h" />
     <ClInclude Include="src\comps\movedByKeyboard.h" />
     <ClInclude Include="src\comps\orbiting.h" />
     <ClInclude Include="src\comps\position.h" />
     <ClInclude Include="src\comps\rotatedByKeyboard.h" />
-    <ClInclude Include="src\comps\rotation.h" />
+    <ClInclude Include="src\comps\orientation.h" />
     <ClInclude Include="src\comps\scale.h" />
     <ClInclude Include="src\comps\shaderProgram.h" />
     <ClInclude Include="src\comps\transform.h" />
