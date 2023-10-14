@@ -10,7 +10,7 @@
 
 #include "comps/scale.h"
 #include "comps/transform.h"
-#include "comps/color.h"
+#include "comps/material.h"
 
 
 App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
@@ -79,7 +79,7 @@ void App::createContext(int width, int height) {
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glFrontFace(GL_CW);
+	glFrontFace(GL_CCW);
 
 	//glEnable(GL_DEPTH_CLAMP);
 }
@@ -102,22 +102,50 @@ void App::loadGLObjects() {
 	);
 
 	// load models
-	modelMngr->LoadModel("tree", "models/tree.obj", "models/");
-	modelMngr->LoadModel("temple", "models/temple.obj", "models/");
-	modelMngr->LoadModel("cube", "models/cube.obj", "models/");
+	//modelMngr->LoadModel("tree", "models/tree.obj", "models/");
+	//modelMngr->LoadModel("temple", "models/temple.obj", "models/");
+	modelMngr->LoadModel("sphere", "models/sphere.obj", "models/");
 }
 
 void App::loadEntities() {
-	factories::createDirLight(registry, color::RGB("#FF7777"), glm::vec3(0.0f, 15.0f, 0.0f));
-	factories::createDirLight(registry, color::RGB("#77FF77"), glm::vec3(360.0f / 3.0f, 15.0f, 0.0f));
-	factories::createDirLight(registry, color::RGB("#7777FF"), glm::vec3(360.0f * 2.0f / 3.0f, 15.0f, 0.0f));
+	//const int NUM_LIGHTS = 3;
+	//myColor::RGB lightColors[NUM_LIGHTS] = { myColor::RGB("#FFFF00"), myColor::RGB("#00FFFF"), myColor::RGB("#FF00FF") };
 
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	//for (int i = 0; i < NUM_LIGHTS; i++) {
+	//	auto light = factories::createDirLight(registry, lightColors[i],
+	//		0.01f, 0.5f, 0.7f,
+	//		360.0f * static_cast<float>(i) / static_cast<float>(NUM_LIGHTS) + 30.0f, 30.0f, 0.0f
+	//	);
+	//	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
+	//}
+
+	auto light = factories::createDirLight(registry, myColor::RGB("#FFFFFF"),
+		0.1f, 0.5f, 0.7f,
+		30.0f, 30.0f, 0.0f
+	);
+	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
+
+
+	auto sphere = registry->create();
+
+	registry->emplace<comps::position>(sphere, glm::vec3(0.0f, 0.0f, -20.0f));
+	registry->emplace<comps::orientation>(sphere);
+	registry->emplace<comps::scale>(sphere, glm::vec3(3.0f));
+	registry->emplace<comps::transform>(sphere);
+
+	auto offspring = modelMngr->GenEntities("sphere", sphere, registry);
+
+	for (const auto& child : *offspring) {
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
+	}
+
+
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
 	
-	auto temple = factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
+	//auto temple = factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
 }
 
 void App::run() {

@@ -160,9 +160,9 @@
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\color.h" />
     <ClInclude Include="src\comps\child.h" />
-    <ClInclude Include="src\comps\color.h" />
-    <ClInclude Include="src\comps\dirLight.h" />
+    <ClInclude Include="src\comps\material.h" />
     <ClInclude Include="src\comps\dynamicallyScaled.h" />
+    <ClInclude Include="src\comps\light.h" />
     <ClInclude Include="src\comps\mesh.h" />
     <ClInclude Include="src\comps\movedByKeyboard.h" />
     <ClInclude Include="src\comps\orbiting.h" />

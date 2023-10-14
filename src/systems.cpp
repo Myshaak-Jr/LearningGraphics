@@ -13,8 +13,8 @@
 #include "comps/orbiting.h"
 #include "comps/mesh.h"
 #include "comps/shaderProgram.h"
-#include "comps/color.h"
-#include "comps/dirLight.h"
+#include "comps/material.h"
+#include "comps/light.h"
 
 
 void systems::orbitPos(const std::unique_ptr<entt::registry>& registry) {
@@ -136,42 +136,43 @@ void systems::calcAbsoluteTransform(const std::unique_ptr<entt::registry>& regis
 }
 
 void setDirLightUniforms(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<ProgramManager>& prgMngr) {
-	auto view = registry->view<const comps::dirLight>();
+	auto view = registry->view<const comps::dirLight, const comps::lightEmitter, const comps::orientation>();
 
 	for (const auto& prg : prgMngr->getShaderPrograms()) {
 		if (!prg.requireLights) continue;
 		glUseProgram(prg.program);
 
-		int i = 0;
+		uint32_t i = 0;
 
-		for (auto [entity, light] : view.each()) {
+		for (auto [entity, light, orient] : view.each()) {
 			std::stringstream ss;
 			ss << "dirLights[" << i++ << "]";
 			std::string locName = ss.str();
 
-			glm::vec3 dir = glm::normalize(light.baseDir);
-
-			if (registry->all_of<comps::orientation>(entity)) {
-				const comps::orientation& orient = registry->get<comps::orientation>(entity);
-				dir = orient.orient * dir;
-			}
-
+			glm::vec3 dir = orient.orient * VEC_DOWN;
 
 			GLint directionLoc = glGetUniformLocation(prg.program, (locName + ".dir").c_str());
+			GLint ambientLoc = glGetUniformLocation(prg.program, (locName + ".ambient").c_str());
 			GLint diffuseLoc = glGetUniformLocation(prg.program, (locName + ".diffuse").c_str());
+			GLint specularLoc = glGetUniformLocation(prg.program, (locName + ".specular").c_str());
 
-			if (directionLoc != -1) {
-				glUniform3fv(directionLoc, 1, glm::value_ptr(dir));
-			}
-			if (directionLoc != -1) {
-				glUniform3fv(diffuseLoc, 1, reinterpret_cast<const float*>(&light.diffuse));
-			}
+			glUniform3fv(directionLoc, 1, glm::value_ptr(dir));
+			glUniform3fv(ambientLoc, 1, glm::value_ptr(light.color.toVec3() * light.ambient));
+			glUniform3fv(diffuseLoc, 1, glm::value_ptr(light.color.toVec3() * light.diffuse));
+			glUniform3fv(specularLoc, 1, glm::value_ptr(light.color.toVec3() * light.specular));
 
 			GLenum err;
 			while ((err = glGetError()) != GL_NO_ERROR) {
 				std::cerr << "OpenGL error (during setting dir lights): " << err << std::endl;
 			}
 		}
+
+		GLint numLightsLoc = glGetUniformLocation(prg.program, "numDirLights");
+
+		if (numLightsLoc != -1) {
+			glUniform1ui(numLightsLoc, i);
+		}
+
 		glUseProgram(0);
 	}
 }
@@ -182,8 +183,8 @@ void setLightUniforms(const std::unique_ptr<entt::registry>& registry, const std
 }
 
 void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
-	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform>();
-	for (auto [entity, mesh, prg, transform] : view.each()) {
+	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform, const comps::material>();
+	for (auto [entity, mesh, prg, transform, material] : view.each()) {
 		GLenum err;
 
 		glUseProgram(prg.program);
@@ -195,27 +196,24 @@ void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::
 			std::cerr << "OpenGL error (glBindVertexArray): " << err << std::endl;
 		}
 
+		// set matrices
+		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(camera->getView() * transform.matrix)));
+
 		glUniformMatrix4fv(prg.modelUnifLoc, 1, GL_FALSE, glm::value_ptr(transform.matrix));
 		glUniformMatrix4fv(prg.viewUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getView()));
 		glUniformMatrix4fv(prg.projUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
+		glUniformMatrix3fv(prg.normalUnifLoc, 1, GL_FALSE, glm::value_ptr(normalMat));
 		while ((err = glGetError()) != GL_NO_ERROR) {
 			std::cerr << "OpenGL error (during setting matrices): " << err << std::endl;
 		}
 
-		if (prg.requireLights) {
-			glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(camera->getView() * transform.matrix)));
-			glUniformMatrix3fv(prg.normalUnifLoc, 1, GL_FALSE, glm::value_ptr(normalMat));
-			while ((err = glGetError()) != GL_NO_ERROR) {
-				std::cerr << "OpenGL error (during setting normal matrix): " << err << std::endl;
-			}
-		}
-
-		if (registry->all_of<comps::material>(entity)) {
-			const auto& color = registry->get<comps::material>(entity);
-			glUniform3fv(glGetUniformLocation(prg.program, "aColor"), 1, reinterpret_cast<const float*>(&color.c));
-			while ((err = glGetError()) != GL_NO_ERROR) {
-				std::cerr << "OpenGL error (during setting aColor): " << err << std::endl;
-			}
+		// set material
+		glUniform1f(glGetUniformLocation(prg.program, "material.shininess"), material.shininess);
+		glUniform3fv(glGetUniformLocation(prg.program, "material.ambient"), 1, reinterpret_cast<const float*>(&material.ambient));
+		glUniform3fv(glGetUniformLocation(prg.program, "material.diffuse"), 1, reinterpret_cast<const float*>(&material.diffuse));
+		glUniform3fv(glGetUniformLocation(prg.program, "material.specular"), 1, reinterpret_cast<const float*>(&material.specular));
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			std::cerr << "OpenGL error (during setting material): " << err << std::endl;
 		}
 
 		glDrawElements(GL_TRIANGLES, mesh.elementCount, mesh.indexType, 0);

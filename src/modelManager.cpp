@@ -54,7 +54,7 @@ Model::Model(
 {
 	// load meshes
 	for (const auto& shape : shapes) {
-		meshes.insert(std::make_pair(shape.name, std::make_unique<Mesh<GLushort>>(attrib, shape)));
+		meshes.insert(std::make_pair(shape.name, std::make_unique<Mesh<GLushort>>(attrib, materials, shape)));
 	}
 
 	// TODO: load materials
@@ -67,8 +67,8 @@ Model::Model(const std::string& name) : name(name) {}
 
 Model::~Model() {
 	for (auto& mesh : meshComps) {
-		glDeleteVertexArrays(1, &mesh.second.vao);
-		GLuint buffers[2] = { mesh.second.vbo, mesh.second.ebo };
+		glDeleteVertexArrays(1, &mesh.second.first.vao);
+		GLuint buffers[2] = { mesh.second.first.vbo, mesh.second.first.ebo };
 		glDeleteBuffers(2, buffers);
 	}
 }
@@ -77,14 +77,14 @@ void Model::genAllMeshComps() {
 	meshComps.clear();
 	
 	for (const auto& mesh : meshes) {
-		meshComps.emplace(mesh.first, mesh.second->exportAsComponent());
+		meshComps.emplace(mesh.first, mesh.second->exportComponents());
 	}
 }
 
 void Model::genMeshComp(const std::string& name) {
 	assert(meshes.find(name) != meshes.end());
 
-	meshComps.emplace(name, meshes.at(name)->exportAsComponent());
+	meshComps.emplace(name, meshes.at(name)->exportComponents());
 }
 
 std::unique_ptr<std::unordered_map<std::string, entt::entity>> Model::generateEntities(entt::entity root, const std::unique_ptr<entt::registry>& registry) {
@@ -98,7 +98,8 @@ std::unique_ptr<std::unordered_map<std::string, entt::entity>> Model::generateEn
 		registry->emplace<comps::orientation>(entity);
 		registry->emplace<comps::scale>(entity);
 		registry->emplace<comps::transform>(entity);
-		registry->emplace<comps::mesh>(entity, mesh.second);
+		registry->emplace<comps::mesh>(entity, mesh.second.first);
+		registry->emplace<comps::material>(entity, mesh.second.second);
 
 		entities->emplace(mesh.first, entity);
 	}

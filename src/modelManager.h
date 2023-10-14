@@ -13,6 +13,7 @@
 #include <tinyobj/tiny_obj_loader.h>
 
 #include "comps/mesh.h"
+#include "comps/material.h"
 
 
 struct Vertex {
@@ -33,7 +34,7 @@ protected:
 		bool operator()(const tinyobj::index_t& a, const tinyobj::index_t& b) const;
 	};
 public:
-	virtual comps::mesh exportAsComponent() const = 0;
+	virtual std::pair<comps::mesh, comps::material> exportComponents() const = 0;
 	virtual ~IMesh() {}
 };
 
@@ -46,23 +47,27 @@ class Mesh : public IMesh {
 private:
 	std::vector<Vertex> vertices;
 	std::vector<TIndex> indices;
-
+	comps::material material;
+	
 	std::string name;
 
 	GLenum getIndexType() const;
 
+	void loadVerticesAndIndices(const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape);
+	void loadMaterial(const std::vector<tinyobj::material_t>& materials, const tinyobj::shape_t& shape);
+
 public:
-	Mesh(const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape);
-	Mesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices);
+	Mesh(const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials, const tinyobj::shape_t& shape);
+	Mesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material);
 	~Mesh() = default;
 
-	comps::mesh exportAsComponent() const override;
+	std::pair<comps::mesh, comps::material> exportComponents() const override;
 };
 
 class Model {
 private:
 	std::unordered_map<std::string, std::unique_ptr<IMesh>> meshes;
-	std::unordered_map<std::string, comps::mesh> meshComps;
+	std::unordered_map<std::string, std::pair<comps::mesh, comps::material>> meshComps;
 
 	std::string name;
 
@@ -80,7 +85,7 @@ public:
 	std::unique_ptr<std::unordered_map<std::string, entt::entity>> generateEntities(entt::entity root, const std::unique_ptr<entt::registry>& registry);
 
 	template <class TIndex>
-	void addMesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices);
+	void addMesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material);
 };
 
 class ModelManager {
@@ -102,14 +107,12 @@ public:
 	std::unique_ptr<std::unordered_map<std::string, entt::entity>> GenEntities(const std::string& name, entt::entity, const std::unique_ptr<entt::registry>& registry);
 
 	template <class TIndex>
-	void AddMeshToModel(const std::string& modelName, const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices);
+	void AddMeshToModel(const std::string& modelName, const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material);
 };
 
 
 template <class TIndex>
-Mesh<TIndex>::Mesh(const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape) {
-	name = shape.name;
-	std::cout << "Loading mesh '" << name << "'" << std::endl;
+void Mesh<TIndex>::loadVerticesAndIndices(const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape) {
 
 	std::unordered_map<tinyobj::index_t, TIndex, index_t_hash, index_t_equal> indexTracker;
 	TIndex numVertices = 0;
@@ -172,16 +175,45 @@ Mesh<TIndex>::Mesh(const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shap
 	}
 }
 
+template <class TIndex>
+void Mesh<TIndex>::loadMaterial(const std::vector<tinyobj::material_t>& materials, const tinyobj::shape_t& shape) {
+	if (shape.mesh.material_ids.empty()) {
+		std::cout << "Warning: Mesh " << name << " has no material, using default white one.";
+		material = comps::material(myColor::RGB(1.0f), myColor::RGB(0.8f), myColor::RGB(0.5f), 255.0f);
+		return;
+	}
+
+	int material_id = shape.mesh.material_ids[0];
+	const tinyobj::material_t& mat = materials[material_id];
+	
+	myColor::RGB ambient{ mat.ambient[0], mat.ambient[1] , mat.ambient[2] };
+	myColor::RGB diffuse{ mat.diffuse[0], mat.diffuse[1] , mat.diffuse[2] };
+	myColor::RGB specular{ mat.specular[0], mat.specular[1] , mat.specular[2] };
+	float shininess = mat.shininess;
+
+	material = comps::material(ambient, diffuse, specular, shininess);
+}
 
 template <class TIndex>
-Mesh<TIndex>::Mesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices)
+Mesh<TIndex>::Mesh(const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials, const tinyobj::shape_t& shape) {
+	name = shape.name;
+	std::cout << "Loading mesh '" << name << "'" << std::endl;
+
+	loadVerticesAndIndices(attrib, shape);
+	loadMaterial(materials, shape);
+}
+
+
+template <class TIndex>
+Mesh<TIndex>::Mesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material)
 	: name(name)
 	, vertices(vertices)
 	, indices(indices)
+	, material(material)
 {}
 
 template <class TIndex>
-comps::mesh Mesh<TIndex>::exportAsComponent() const {
+std::pair<comps::mesh, comps::material> Mesh<TIndex>::exportComponents() const {
 	comps::mesh mesh = {};
 
 	GLenum err;
@@ -234,18 +266,18 @@ comps::mesh Mesh<TIndex>::exportAsComponent() const {
 
 	mesh.indexType = getIndexType();
 
-	return mesh;
+	return std::make_pair(mesh, material);
 }
 
 template <class TIndex>
-void Model::addMesh(const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices) {
+void Model::addMesh(const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material) {
 	if (meshes.find(meshName) != meshes.end()) {
 		std::stringstream ss;
 		ss << "Mesh with name " << meshName << " already exists in model " << name << "." << std::endl;
 		throw std::runtime_error(ss.str());
 	}
 
-	meshes.insert(std::make_pair(meshName, std::make_unique<Mesh<TIndex>>(meshName, vertices, indices)));
+	meshes.insert(std::make_pair(meshName, std::make_unique<Mesh<TIndex>>(meshName, vertices, indices, material)));
 
 	// Generate OpenGL objects for this mesh
 	genMeshComp(meshName);
@@ -257,9 +289,10 @@ void ModelManager::AddMeshToModel(
 	const std::string& modelName,
 	const std::string& meshName,
 	const std::vector<Vertex>& vertices,
-	const std::vector<TIndex>& indices
+	const std::vector<TIndex>& indices,
+	const comps::material& material
 ) {
 	assertExisting(modelName);
 
-	models.at(modelName).addMesh(meshName, vertices, indices);
+	models.at(modelName).addMesh(meshName, vertices, indices, material);
 }

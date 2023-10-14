@@ -2,8 +2,9 @@
 
 #include <string>
 #include <stdint.h>
+#include <glm/glm.hpp>
 
-namespace color {
+namespace myColor {
 	struct XYZ;
 	struct LAB;
 	struct LCH;
@@ -20,6 +21,8 @@ namespace color {
 		RGB(const XYZ& xyz);
 		RGB(const LAB& lab);
 		RGB(const LCH& lch);
+
+		glm::vec3 toVec3() const;
 	};
 
 	struct XYZ {

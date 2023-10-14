@@ -7,8 +7,8 @@
 #include "comps/scale.h"
 #include "comps/transform.h"
 #include "comps/rotatedByKeyboard.h"
-#include "comps/color.h"
-#include "comps/dirLight.h"
+#include "comps/material.h"
+#include "comps/light.h"
 
 entt::entity factories::createTree(
 	const std::unique_ptr<entt::registry>& registry,
@@ -29,13 +29,6 @@ entt::entity factories::createTree(
 		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
 	}
 
-	auto trunk = offspring->at("trunk");
-	registry->emplace<comps::material>(trunk, C_BROWN);
-	auto lowerCone = offspring->at("lower-cone");
-	registry->emplace<comps::material>(lowerCone, C_TREE_GREEN);
-	auto upperCone = offspring->at("upper-cone");
-	registry->emplace<comps::material>(upperCone, C_TREE_GREEN);
-
 	return tree;
 }
 
@@ -48,7 +41,11 @@ entt::entity factories::createTemple(
 	auto temple = registry->create();
 
 	registry->emplace<comps::position>(temple, pos);
-	registry->emplace<comps::orientation>(temple, rot.x, rot.y, rot.z);
+
+	glm::quat y = glm::angleAxis(glm::radians(rot.x), VEC_UP);
+	glm::quat x = glm::angleAxis(glm::radians(rot.y), VEC_RIGHT);
+	glm::quat z = glm::angleAxis(glm::radians(rot.z), VEC_FORWARD);
+	registry->emplace<comps::orientation>(temple, z * x * y);
 	
 	registry->emplace<comps::scale>(temple, scale);
 	registry->emplace<comps::transform>(temple);
@@ -59,30 +56,25 @@ entt::entity factories::createTemple(
 		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
 	}
 
-	auto platform = offspring->at("platform");
-	registry->emplace<comps::material>(platform, C_STONE2);
-
-	for (int i = 1; i <= 6; i++) {
-		std::stringstream columnName;
-		std::stringstream columnTopName;
-
-		columnName << "column-" << i;
-		columnTopName << "column-top-" << i;
-
-		auto column = offspring->at(columnName.str());
-		registry->emplace<comps::material>(column, C_STONE1);
-		auto columnTop = offspring->at(columnTopName.str());
-		registry->emplace<comps::material>(columnTop, C_STONE1);
-	}
-
 	return temple;
 }
 
-entt::entity factories::createDirLight(const std::unique_ptr<entt::registry>& registry, const color::RGB& color, const glm::vec3& rot) {
+entt::entity factories::createDirLight(
+	const std::unique_ptr<entt::registry>& registry,
+	const myColor::RGB& color,
+	float ambient, float diffuse, float specular,
+	float yaw, float pitch, float roll
+) {
 	auto light = registry->create();
 
-	registry->emplace<comps::dirLight>(light, color);
-	registry->emplace<comps::orientation>(light, rot.x, rot.y, rot.z);
+
+	registry->emplace<comps::lightEmitter>(light, color, ambient, diffuse, specular);
+	registry->emplace<comps::dirLight>(light);
+
+	glm::quat y = glm::angleAxis(glm::radians(yaw), VEC_UP);
+	glm::quat x = glm::angleAxis(glm::radians(pitch), VEC_RIGHT);
+	glm::quat z = glm::angleAxis(glm::radians(roll), VEC_FORWARD);
+	registry->emplace<comps::orientation>(light, z * y * x);
 
 	return light;
 }

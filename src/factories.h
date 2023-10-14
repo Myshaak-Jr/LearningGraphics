@@ -22,9 +22,11 @@ namespace factories {
 		glm::vec3 pos, glm::vec3 rot, glm::vec3 scale
 	);
 
+	// applies first pitch than yaw than roll
 	entt::entity createDirLight(
 		const std::unique_ptr<entt::registry>& registry,
-		const color::RGB& color,
-		const glm::vec3& rot
+		const myColor::RGB& color,
+		float ambient, float diffuse, float specular,
+		float yaw, float pitch, float roll
 	);
 }

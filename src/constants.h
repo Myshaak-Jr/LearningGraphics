@@ -1,5 +1,7 @@
 #pragma once
 
+#include "comps/material.h"
+
 enum class Axis {
 	X,
 	Y,
@@ -19,8 +21,8 @@ enum class EAngle {
 #define VEC_FORWARD glm::vec3(0.0f, 0.0f, -1.0f)
 #define VEC_BACKWARD -VEC_FORWARD
 
-#define C_TREE_GREEN color::RGB("#0a481e")
-#define C_BROWN color::RGB("#341a0e")
+#define C_TREE_GREEN myColor::RGB("#0a481e")
+#define C_BROWN myColor::RGB("#341a0e")
 
-#define C_STONE1 color::RGB("#594f4f")
-#define C_STONE2 color::RGB("#4a3c3c")
+#define C_STONE1 myColor::RGB("#594f4f")
+#define C_STONE2 myColor::RGB("#4a3c3c")

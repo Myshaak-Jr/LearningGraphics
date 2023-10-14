@@ -110,7 +110,7 @@
     <ClInclude Include="src\modelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\comps\color.h">
+    <ClInclude Include="src\comps\material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera.h">
@@ -122,10 +122,10 @@
     <ClInclude Include="src\terrain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\comps\dirLight.h">
+    <ClInclude Include="src\color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\color.h">
+    <ClInclude Include="src\comps\light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
