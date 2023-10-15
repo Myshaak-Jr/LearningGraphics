@@ -1,28 +1,93 @@
 #pragma once
 
+#include <string>
+#include <thread>
+#include <mutex>
+#include <memory>
+#include <queue>
+#include <condition_variable>
+
+#include <entt/entt.hpp>
+#include <glm/glm.hpp>
+
 #include "perlin.h"
 #include "modelManager.h"
+#include "comps/material.h"
 
 
-class Terrain {
-private:
-	//float width;
-	//float height;
-	//uint32_t res_x;
-	//uint32_t res_y;
+namespace myTerrain {
+	class TerrainType {
+		comps::material material;
+		float height;
+	};
 
-	//Perlin perlin;
+	class Chunk {
+		int x;
+		int y;
 
-	//void createVertex(std::vector<Vertex>& vertices, uint32_t x, uint32_t y);
-	//void calcIndices(std::vector<uint32_t>& indices, uint32_t x, uint32_t y);
+		std::string modelName;
+	};
 
-public:
-	Terrain();
-	~Terrain() = default;
-	
-	std::vector<std::vector<float>> GenerateNoiseMap(int mapWidth, int mapHeight, float scale, uint32_t seed);
+	class Terrain {
+	private:
+		using noiseType = myMath::Perlin;
 
-	/* creates a mesh from the perlin noise, with origin being at the center */
-	//void ExportAsModel(std::vector<std::vector<float>> noiseMap, const std::string& name, const std::unique_ptr<ModelManager>& modelMngr);
-	//void GetHeight(float x, float y);
-};
+		std::string name;
+		std::shared_ptr<ModelManager> modelMngr;
+		std::mutex& modelMngrMtx;
+
+		std::shared_ptr<entt::registry> registry;
+		std::mutex& registryMtx;
+
+		int chunkWidth;
+		int chunkHeight;
+
+		float scale;
+
+		int octaves;
+		float persistance;
+		float lacunarity;
+
+		uint32_t seed;
+
+		std::vector<noiseType> perlins;
+		std::vector<TerrainType> terrainTypes;
+
+		std::vector<Chunk> loadedChunks;
+		std::mutex loadedChunksMtx;
+
+		std::vector<std::thread> chunkLoaders;
+
+		std::condition_variable cv;
+		std::queue<glm::ivec2> chunksToLoad;
+		std::mutex queueMtx;
+
+		bool stopChunkLoaders;
+
+		void chunkLoaderJob();
+		void loadChunk(glm::ivec2 chunkPos);
+
+		std::vector<std::vector<float>> generateHeightMap(glm::ivec2 chunkPos);
+		void generateMesh(std::vector<std::vector<float>> heightMap);
+
+		void calcIndices(std::vector<uint32_t>& indices, uint32_t x, uint32_t y);
+
+
+
+	public:
+		Terrain(
+			const std::string& name, std::shared_ptr<ModelManager>& modelMngr, std::mutex& modelMngrMtx,
+			std::shared_ptr<entt::registry>& registry, std::mutex& registryMtx,
+			const std::vector<TerrainType>& terrainTypes,
+			int chunkSize, float scale, int octaves, float persistance, float lacunarity, uint32_t seed
+		);
+		~Terrain();
+
+		/* Generates chunks and adds them to the registry */
+		/* Multithreaded, the app should keep running while the generation happens. */
+		void LoadChunks(const std::vector<glm::ivec2>& chunks);
+		void LoadChunk(glm::ivec2 chunkPos);
+
+		//void UnloadChunks();
+	};
+}

@@ -24,8 +24,8 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	createContext(width, height);
 
 	prgMngr = std::make_unique<ProgramManager>();
-	modelMngr = std::make_unique<ModelManager>();
-	registry = std::make_unique<entt::registry>();
+	modelMngr = std::make_shared<ModelManager>();
+	registry = std::make_shared<entt::registry>();
 	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 0.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
 	//terrain = std::make_unique<Terrain>(500.0f, 500.0f, 500, 3.0f);
 }

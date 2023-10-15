@@ -173,8 +173,8 @@ void setDirLightUniforms(const std::unique_ptr<entt::registry>& registry, const 
 			glUniform1ui(numLightsLoc, i);
 		}
 
-		glUseProgram(0);
 	}
+	glUseProgram(0);
 }
 
 
@@ -182,10 +182,30 @@ void setLightUniforms(const std::unique_ptr<entt::registry>& registry, const std
 	setDirLightUniforms(registry, prgMngr);
 }
 
+void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::unique_ptr<ProgramManager>& prgMngr) {
+	// TODO: use uniform buffers
+	for (const auto& prg : prgMngr->getShaderPrograms()) {
+		GLenum err;
+		while ((err = glGetError()) != GL_NO_ERROR);
+	
+		glUseProgram(prg.program);
+		
+		glUniformMatrix4fv(prg.viewUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getView()));
+		glUniformMatrix4fv(prg.projUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
+
+
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			std::cerr << "OpenGL error (during setting camera matrices): " << err << std::endl;
+		}
+	}
+	glUseProgram(0);
+}
+
 void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
 	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform, const comps::material>();
 	for (auto [entity, mesh, prg, transform, material] : view.each()) {
 		GLenum err;
+		while ((err = glGetError()) != GL_NO_ERROR);
 
 		glUseProgram(prg.program);
 		while ((err = glGetError()) != GL_NO_ERROR) {
@@ -200,13 +220,12 @@ void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::
 		glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(camera->getView() * transform.matrix)));
 
 		glUniformMatrix4fv(prg.modelUnifLoc, 1, GL_FALSE, glm::value_ptr(transform.matrix));
-		glUniformMatrix4fv(prg.viewUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getView()));
-		glUniformMatrix4fv(prg.projUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
 		glUniformMatrix3fv(prg.normalUnifLoc, 1, GL_FALSE, glm::value_ptr(normalMat));
 		while ((err = glGetError()) != GL_NO_ERROR) {
 			std::cerr << "OpenGL error (during setting matrices): " << err << std::endl;
 		}
 
+		// TODO: use uniform buffers
 		// set material
 		glUniform1f(glGetUniformLocation(prg.program, "material.shininess"), material.shininess);
 		glUniform3fv(glGetUniformLocation(prg.program, "material.ambient"), 1, reinterpret_cast<const float*>(&material.ambient));
@@ -228,5 +247,6 @@ void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::
 
 void systems::render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::unique_ptr<ProgramManager>& prgMngr) {
 	setLightUniforms(registry, prgMngr);
+	setCameraUniforms(camera, prgMngr);
 	renderEntities(registry, camera);
 }

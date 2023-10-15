@@ -18,12 +18,12 @@ private:
 	bool running;
 	bool freeCameraMode;
 
-	std::unique_ptr<entt::registry> registry;
+	std::shared_ptr<entt::registry> registry;
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 	SDL_GLContext context;
 	
 	std::unique_ptr<ProgramManager> prgMngr;
-	std::unique_ptr<ModelManager> modelMngr;
+	std::shared_ptr<ModelManager> modelMngr;
 
 	std::unique_ptr<Camera> camera;
 
