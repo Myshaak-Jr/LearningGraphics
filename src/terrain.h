@@ -12,6 +12,7 @@
 
 #include "perlin.h"
 #include "modelManager.h"
+#include "programManager.h"
 #include "comps/material.h"
 
 
@@ -22,10 +23,11 @@ namespace myTerrain {
 	};
 
 	class Chunk {
-		int x;
-		int y;
-
+		glm::ivec2 position;
 		std::string modelName;
+
+	public:
+		Chunk(glm::ivec2 position, const std::string& modelName);
 	};
 
 	class Terrain {
@@ -34,15 +36,19 @@ namespace myTerrain {
 
 		std::string name;
 		std::shared_ptr<ModelManager> modelMngr;
-		std::mutex& modelMngrMtx;
+
+		std::shared_ptr<const ProgramManager> prgMngr;
+		std::string shaderProgramName;
 
 		std::shared_ptr<entt::registry> registry;
-		std::mutex& registryMtx;
+		std::mutex& registryEntityCreateMtx;
+
+		entt::entity rootEntity;
 
 		int chunkWidth;
 		int chunkHeight;
 
-		float scale;
+		float noiseScale;
 
 		int octaves;
 		float persistance;
@@ -51,7 +57,7 @@ namespace myTerrain {
 		uint32_t seed;
 
 		std::vector<noiseType> perlins;
-		std::vector<TerrainType> terrainTypes;
+		//std::vector<TerrainType> terrainTypes;
 
 		std::vector<Chunk> loadedChunks;
 		std::mutex loadedChunksMtx;
@@ -64,24 +70,35 @@ namespace myTerrain {
 
 		bool stopChunkLoaders;
 
+		void initPerlins();
+		void initChunkLoaders();
+		void initRootEntity(glm::vec3 origin, float yaw, float pitch, float roll, glm::vec3 scale);
+
 		void chunkLoaderJob();
-		void loadChunk(glm::ivec2 chunkPos);
 
-		std::vector<std::vector<float>> generateHeightMap(glm::ivec2 chunkPos);
-		void generateMesh(std::vector<std::vector<float>> heightMap);
+		std::string getNameFromChunkPos(glm::ivec2 chunkPos) const;
+		comps::material getMaterialFromChunkPos(glm::ivec2 chunkPos) const;
 
-		void calcIndices(std::vector<uint32_t>& indices, uint32_t x, uint32_t y);
+		float generateHeightValue(glm::vec2 samplePos) const;
+		std::vector<std::vector<std::pair<float, glm::vec3>>> generateHeightAndNormalMap(glm::ivec2 chunkPos) const;
+		std::unique_ptr<Mesh<uint32_t>> generateMesh(const std::string& meshName, const comps::material& material, const std::vector<std::vector<std::pair<float, glm::vec3>>>& heightAndNormalMap) const;
 
+		static Vertex createVertex(float height, glm::vec2 position, glm::vec3 normal);
+		void createIndices(std::vector<uint32_t>& indices, int x, int y) const;
 
+		void createEntities(const std::string& name, glm::ivec2 chunkPos);
 
 	public:
 		Terrain(
-			const std::string& name, std::shared_ptr<ModelManager>& modelMngr, std::mutex& modelMngrMtx,
-			std::shared_ptr<entt::registry>& registry, std::mutex& registryMtx,
-			const std::vector<TerrainType>& terrainTypes,
-			int chunkSize, float scale, int octaves, float persistance, float lacunarity, uint32_t seed
+			const std::string& name, std::shared_ptr<ModelManager> modelMngr,
+			const std::string& shaderProgramName, std::shared_ptr<const ProgramManager> prgMngr,
+			std::shared_ptr<entt::registry>& registry, std::mutex& registryEntityCreateMtx,
+			glm::vec3 origin, float yaw, float pitch, float roll, glm::vec3 scale,
+			/*const std::vector<TerrainType>& terrainTypes,*/
+			int chunkSize, float noiseScale, int octaves, float persistance, float lacunarity, uint32_t seed
 		);
 		~Terrain();
+		void loadChunk(glm::ivec2 chunkPos);
 
 		/* Generates chunks and adds them to the registry */
 		/* Multithreaded, the app should keep running while the generation happens. */

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 
 #include <SDL2/SDL.h>
 #include <glad/glad.h>
@@ -19,11 +20,14 @@ private:
 	bool freeCameraMode;
 
 	std::shared_ptr<entt::registry> registry;
+	std::mutex registryEntityCreateMtx;
+	
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 	SDL_GLContext context;
 	
-	std::unique_ptr<ProgramManager> prgMngr;
+	std::shared_ptr<ProgramManager> prgMngr;
 	std::shared_ptr<ModelManager> modelMngr;
+	std::unique_ptr<myTerrain::Terrain> terrain;
 
 	std::unique_ptr<Camera> camera;
 

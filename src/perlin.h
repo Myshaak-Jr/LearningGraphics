@@ -9,15 +9,14 @@ namespace myMath {
 	private:
 		uint32_t seed;
 
-		uint32_t hashPos(glm::ivec2 pos);
-		float calcAngle(glm::ivec2 pos);
-		glm::vec2 calcGradientVec(glm::ivec2 pos);
+		float calcAngle(glm::ivec2 pos) const;
+		glm::vec2 calcGradientVec(glm::ivec2 pos) const;
 
 	public:
 		Perlin(uint32_t seed);
 		~Perlin() = default;
 
-		float get(glm::vec2 position);
-		float get(float x, float y);
+		/* returns noise value in [0, 1] */
+		float get(glm::vec2 position) const;
 	};
 }

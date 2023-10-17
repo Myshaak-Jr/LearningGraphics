@@ -9,18 +9,19 @@ namespace myColor {
 	struct LAB;
 	struct LCH;
 
-	struct RGB {
+	struct RedGreenBlue {
 		float r, g, b;
 
-		RGB(float r, float g, float b);
-		RGB(uint8_t r, uint8_t g, uint8_t b);
-		RGB(float b);
-		RGB(const std::string& hex);
-		RGB();
+		RedGreenBlue(float r, float g, float b);
+		/* r, g, b in range [0, 255] */
+		RedGreenBlue(int r, int g, int b);
+		RedGreenBlue(float b);
+		RedGreenBlue(const std::string& hex);
+		RedGreenBlue();
 
-		RGB(const XYZ& xyz);
-		RGB(const LAB& lab);
-		RGB(const LCH& lch);
+		RedGreenBlue(const XYZ& xyz);
+		RedGreenBlue(const LAB& lab);
+		RedGreenBlue(const LCH& lch);
 
 		glm::vec3 toVec3() const;
 	};
@@ -31,7 +32,7 @@ namespace myColor {
 		XYZ(float x, float y, float z);
 		XYZ();
 
-		XYZ(const RGB& rgb);
+		XYZ(const RedGreenBlue& rgb);
 		XYZ(const LAB& lab);
 		XYZ(const LCH& lch);
 	};
@@ -42,7 +43,7 @@ namespace myColor {
 		LAB(float l, float a, float b);
 		LAB();
 
-		LAB(const RGB& rgb);
+		LAB(const RedGreenBlue& rgb);
 		LAB(const XYZ& xyz);
 		LAB(const LCH& lch);
 	};
@@ -53,12 +54,12 @@ namespace myColor {
 		LCH(float l, float c, float h);
 		LCH();
 
-		LCH(const RGB& rgb);
+		LCH(const RedGreenBlue& rgb);
 		LCH(const XYZ& xyz);
 		LCH(const LAB& lab);
 	};
 
-	RGB lerpRGB(const RGB& c1, const RGB& c2, float t);
+	RedGreenBlue lerpRGB(const RedGreenBlue& c1, const RedGreenBlue& c2, float t);
 	LCH lerpLCH(const LCH& c1, const LCH& c2, float t);
-	RGB averageRGB(const RGB& c1, const RGB& c2);
+	RedGreenBlue averageRGB(const RedGreenBlue& c1, const RedGreenBlue& c2);
 }

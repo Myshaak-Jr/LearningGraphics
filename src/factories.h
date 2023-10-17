@@ -9,23 +9,23 @@
 
 namespace factories {
 	entt::entity createTree(
-		const std::unique_ptr<entt::registry>& registry,
-		const std::unique_ptr<ModelManager>& modelMngr,
-		const std::unique_ptr<ProgramManager>& prgMngr,
+		const std::shared_ptr<entt::registry>& registry,
+		const std::shared_ptr<ModelManager>& modelMngr,
+		const std::shared_ptr<ProgramManager>& prgMngr,
 		glm::vec3 pos, glm::vec3 scale
 	);
 
 	entt::entity createTemple(
-		const std::unique_ptr<entt::registry>& registry,
-		const std::unique_ptr<ModelManager>& modelMngr,
-		const std::unique_ptr<ProgramManager>& prgMngr,
+		const std::shared_ptr<entt::registry>& registry,
+		const std::shared_ptr<ModelManager>& modelMngr,
+		const std::shared_ptr<ProgramManager>& prgMngr,
 		glm::vec3 pos, glm::vec3 rot, glm::vec3 scale
 	);
 
 	// applies first pitch than yaw than roll
 	entt::entity createDirLight(
-		const std::unique_ptr<entt::registry>& registry,
-		const myColor::RGB& color,
+		const std::shared_ptr<entt::registry>& registry,
+		const myColor::RedGreenBlue& color,
 		float ambient, float diffuse, float specular,
 		float yaw, float pitch, float roll
 	);

@@ -23,11 +23,18 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	createWindow(width, height);
 	createContext(width, height);
 
-	prgMngr = std::make_unique<ProgramManager>();
+	prgMngr = std::make_shared<ProgramManager>();
 	modelMngr = std::make_shared<ModelManager>();
 	registry = std::make_shared<entt::registry>();
 	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 0.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
-	//terrain = std::make_unique<Terrain>(500.0f, 500.0f, 500, 3.0f);
+	
+	terrain = std::make_unique<myTerrain::Terrain>(
+		"gameMap", modelMngr,
+		"diffuse", prgMngr,
+		registry, registryEntityCreateMtx,
+		glm::vec3(0.0f), 0.0f, 0.0f, 0.0f, glm::vec3(1.0f),
+		20, 0.3f, 1, 0.5f, 2.0f, 69
+	);
 }
 
 App::~App() {
@@ -87,6 +94,12 @@ void App::createContext(int width, int height) {
 void App::loadScene() {
 	loadGLObjects();
 	loadEntities();
+	int x = 0, y = 0;
+	//for (int y = -20; y < 21; y++) {
+	//	for (int x = -20; x < 21; x++) {
+			terrain->loadChunk(glm::ivec2(x, y));
+	//	}
+	//}
 }
 
 void App::loadGLObjects() {
@@ -108,6 +121,8 @@ void App::loadGLObjects() {
 }
 
 void App::loadEntities() {
+	std::unique_lock<std::mutex> lock(registryEntityCreateMtx);
+
 	//const int NUM_LIGHTS = 3;
 	//myColor::RGB lightColors[NUM_LIGHTS] = { myColor::RGB("#FFFF00"), myColor::RGB("#00FFFF"), myColor::RGB("#FF00FF") };
 
@@ -119,25 +134,25 @@ void App::loadEntities() {
 	//	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
 	//}
 
-	auto light = factories::createDirLight(registry, myColor::RGB("#FFFFFF"),
+	auto light = factories::createDirLight(registry, myColor::RedGreenBlue("#FFFFFF"),
 		0.1f, 0.5f, 0.7f,
 		30.0f, 30.0f, 0.0f
 	);
 	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
 
 
-	auto sphere = registry->create();
+	//auto sphere = registry->create();
 
-	registry->emplace<comps::position>(sphere, glm::vec3(0.0f, 0.0f, -20.0f));
-	registry->emplace<comps::orientation>(sphere);
-	registry->emplace<comps::scale>(sphere, glm::vec3(3.0f));
-	registry->emplace<comps::transform>(sphere);
+	//registry->emplace<comps::position>(sphere, glm::vec3(0.0f, 0.0f, -20.0f));
+	//registry->emplace<comps::orientation>(sphere);
+	//registry->emplace<comps::scale>(sphere, glm::vec3(3.0f));
+	//registry->emplace<comps::transform>(sphere);
 
-	auto offspring = modelMngr->GenEntities("sphere", sphere, registry);
+	//auto offspring = modelMngr->GenEntities("sphere", sphere, registry);
 
-	for (const auto& child : *offspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
-	}
+	//for (const auto& child : *offspring) {
+	//	registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
+	//}
 
 
 	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));

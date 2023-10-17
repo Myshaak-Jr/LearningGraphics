@@ -1,5 +1,7 @@
 #include "modelManager.h"
 
+#include <syncstream>
+
 #include "comps/child.h"
 #include "comps/position.h"
 #include "comps/orientation.h"
@@ -87,11 +89,13 @@ void Model::genMeshComp(const std::string& name) {
 	meshComps.emplace(name, meshes.at(name)->exportComponents());
 }
 
-std::unique_ptr<std::unordered_map<std::string, entt::entity>> Model::generateEntities(entt::entity root, const std::unique_ptr<entt::registry>& registry) {
+std::unique_ptr<std::unordered_map<std::string, entt::entity>> Model::generateEntities(entt::entity root, const std::shared_ptr<entt::registry>& registry) {
 	auto entities = std::make_unique<std::unordered_map<std::string, entt::entity>>();
 	
 	for (const auto& mesh : meshComps) {
-		entt::entity entity = registry->create();
+		entt::entity entity;
+
+		entity = registry->create();
 
 		registry->emplace<comps::child>(entity, root);
 		registry->emplace<comps::position>(entity);
@@ -110,7 +114,7 @@ std::unique_ptr<std::unordered_map<std::string, entt::entity>> Model::generateEn
 void ModelManager::LoadModel(const std::string& name, const char* filename, const char* materialPath, bool triangulate ) {
 	assertNotExisting(name);
 
-	std::cout << "Loading model '" << filename << "'" << std::endl;
+	std::osyncstream(std::cout) << "Loading model '" << filename << "'" << std::endl;
 
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -132,17 +136,25 @@ void ModelManager::LoadModel(const std::string& name, const char* filename, cons
 		throw std::runtime_error("Failed to load/parse .obj.\n");
 	}
 
-	models.emplace(
-		std::piecewise_construct,
-		std::forward_as_tuple(name),
-		std::forward_as_tuple(name, attrib, shapes, materials)
-	);
+	{
+		std::unique_lock lock(mtx);
+		models.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(name),
+			std::forward_as_tuple(name, attrib, shapes, materials)
+		);
+	}
 }
 
 void ModelManager::AddModel(const std::string& name) {
 	assertNotExisting(name);
 
-	models.emplace(name, name);
+	{
+		std::unique_lock lock(mtx);
+		models.emplace(name, name);
+	}
+
+	std::osyncstream(std::cout) << "Added model " << name << std::endl;
 }
 
 void ModelManager::assertExisting(const std::string& name) const {
@@ -162,10 +174,10 @@ void ModelManager::assertNotExisting(const std::string& name) const {
 }
 
 std::unique_ptr<std::unordered_map<std::string, entt::entity>>
-ModelManager::GenEntities(
-	const std::string& name, entt::entity root, const std::unique_ptr<entt::registry>& registry)
-{
+ModelManager::GenEntities(const std::string& name, entt::entity root, const std::shared_ptr<entt::registry>& registry) {
 	assertExisting(name);
+
+	// NOT SURE WHETHER THERE SHOULD OR SHOULDN'T BE MUTEX LOCK HERE!
 
 	return std::move(models.at(name).generateEntities(root, registry));
 }

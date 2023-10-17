@@ -1,41 +1,92 @@
 #include "terrain.h"
 
 #include <syncstream>
+#include <sstream>
+#include <iostream>
+#include <functional>
 
+#include <windows.h>
+
+#include "myMath.h"
+
+#include "comps/position.h"
+#include "comps/orientation.h"
+#include "comps/scale.h"
+#include "comps/transform.h"
+#include "comps/terrainComps.h"
+#include "comps/child.h"
+
+
+myTerrain::Chunk::Chunk(glm::ivec2 position, const std::string& modelName) : position(position), modelName(modelName) {}
 
 myTerrain::Terrain::Terrain(
-	const std::string& name, std::shared_ptr<ModelManager>& modelMngr, std::mutex& modelMngrMtx,
-	std::shared_ptr<entt::registry>& registry, std::mutex& registryMtx,
-	const std::vector<TerrainType>& terrainTypes,
-	int chunkSize, float scale, int octaves, float persistance, float lacunarity, uint32_t seed
+	const std::string& name, std::shared_ptr<ModelManager> modelMngr,
+	const std::string& shaderProgramName, std::shared_ptr<const ProgramManager> prgMngr,
+	std::shared_ptr<entt::registry>& registry, std::mutex& registryEntityCreateMtx,
+	glm::vec3 origin, float yaw, float pitch, float roll, glm::vec3 scale,
+	/*const std::vector<TerrainType>& terrainTypes,*/
+	int chunkSize, float noiseScale, int octaves, float persistance, float lacunarity, uint32_t seed
 )
 	: name(name)
 	, modelMngr(modelMngr)
-	, modelMngrMtx(modelMngrMtx)
+	, shaderProgramName(shaderProgramName)
+	, prgMngr(prgMngr)
 	, registry(registry)
-	, registryMtx(registryMtx)
+	, registryEntityCreateMtx(registryEntityCreateMtx)
 	, chunkWidth(chunkSize)
 	, chunkHeight(chunkSize)
-	, scale(scale)
+	, noiseScale(noiseScale > 0.0f ? noiseScale : 0.0001f)
 	, octaves(octaves)
 	, persistance(persistance)
 	, lacunarity(lacunarity)
-	, terrainTypes(terrainTypes)
+	//, terrainTypes(terrainTypes)
 	, seed(seed)
 {
+	initPerlins();
+	initChunkLoaders();
+	initRootEntity(origin, yaw, pitch, roll, scale);
+}
+
+void myTerrain::Terrain::initPerlins() {
 	std::mt19937 rng{ seed };
 	std::uniform_int_distribution<uint32_t> dist{};
 
 	for (int i = 0; i < octaves; i++) {
 		perlins.push_back(noiseType(dist(rng)));
 	}
+}
 
+void myTerrain::Terrain::initChunkLoaders() {
 	unsigned int numChunkLoaders = std::thread::hardware_concurrency();
 
 	for (size_t i = 0; i < numChunkLoaders; ++i) {
-		std::thread thread{ chunkLoaderJob, this };
-		chunkLoaders.emplace_back(thread);
+		std::thread thread{ std::bind(&myTerrain::Terrain::chunkLoaderJob, this) };
+
+		std::wstringstream ss;
+
+		ss << "ChunkLoader" << i;
+		SetThreadDescription(thread.native_handle(), ss.str().c_str());
+
+		chunkLoaders.emplace_back(std::move(thread));
 	}
+}
+
+void myTerrain::Terrain::initRootEntity(glm::vec3 origin, float yaw, float pitch, float roll, glm::vec3 scale) {
+	glm::quat y = glm::angleAxis(yaw, VEC_UP);
+	glm::quat x = glm::angleAxis(pitch, VEC_RIGHT);
+	glm::quat z = glm::angleAxis(roll, VEC_FORWARD);
+	glm::quat orient = z * x * y;
+
+	std::unique_lock<std::mutex> lock(registryEntityCreateMtx);
+
+	entt::entity entity = registry->create();
+
+	registry->emplace<comps::position>(entity, origin);
+	registry->emplace<comps::orientation>(entity, orient);
+	registry->emplace<comps::scale>(entity, scale);
+	registry->emplace<comps::transform>(entity);
+
+	registry->emplace<comps::terrain::root>(entity);
 }
 
 myTerrain::Terrain::~Terrain() {
@@ -89,265 +140,196 @@ void myTerrain::Terrain::chunkLoaderJob() {
 void myTerrain::Terrain::loadChunk(glm::ivec2 chunkPos) {
 	std::osyncstream(std::cout) << "Loading chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
 
-	auto heightMap = generateHeightMap(chunkPos);
-	generateMesh(heightMap);
+	std::osyncstream(std::cout) << "Generating noise map for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+	std::vector<std::vector<std::pair<float, glm::vec3>>> heightAndNormalMap = generateHeightAndNormalMap(chunkPos);
+	std::osyncstream(std::cout) << "Generated noise map for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
 
-	std::osyncstream(std::cout) << "Loaded chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+	std::string chunkName = getNameFromChunkPos(chunkPos);
+	comps::material material = getMaterialFromChunkPos(chunkPos);
+
+	std::osyncstream(std::cout) << "Generating mesh for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+	std::unique_ptr<Mesh<uint32_t>> mesh = generateMesh("terrain", material, heightAndNormalMap);
+	std::osyncstream(std::cout) << "Generated mesh for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+
+	std::osyncstream(std::cout) << "Generating model for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+	modelMngr->AddModel(chunkName);
+	modelMngr->AddMeshToModel(chunkName, std::move(mesh));
+	std::osyncstream(std::cout) << "Generated model for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+
+	{
+		std::unique_lock<std::mutex> lock(loadedChunksMtx);
+		loadedChunks.push_back(Chunk{ chunkPos, chunkName });
+	}
+	std::osyncstream(std::cout) << "Creating entities for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+
+	createEntities(chunkName, chunkPos);
+
+	std::osyncstream(std::cout) << "Created entities for chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
+
+	std::osyncstream(std::cout) << "Successfully Loaded chunk [" << chunkPos.x << ", " << chunkPos.y << "]" << std::endl;
 }
 
+std::string myTerrain::Terrain::getNameFromChunkPos(glm::ivec2 chunkPos) const {
+	std::stringstream ss;
+	ss << name << "-chunk-[" << chunkPos.x << "," << chunkPos.y << "]";
+	return ss.str();
+}
 
-std::vector<std::vector<float>> myTerrain::Terrain::generateHeightMap(glm::ivec2 chunkPos) {
-	std::vector<std::vector<float>> noiseMap(chunkHeight, std::vector<float>(chunkWidth, 0.0f));
+comps::material myTerrain::Terrain::getMaterialFromChunkPos(glm::ivec2 chunkPos) const {
+	const myColor::LCH start(myColor::RedGreenBlue(50, 168, 82));
+	const myColor::LCH end(myColor::RedGreenBlue(194, 134, 31));
 
-	std::vector<myMath::Perlin> perlins;
+	const float t = myMath::hashPos(chunkPos, seed) / static_cast<float>(UINT32_MAX);
+	const myColor::RedGreenBlue color = myColor::lerpLCH(start, end, t);
 
-	std::mt19937 rng{ seed };
-	std::uniform_int_distribution<uint32_t> dist{};
+	return comps::material(color, color, myColor::RedGreenBlue(0.5f), 16.0f);
+}
+
+float myTerrain::Terrain::generateHeightValue(glm::vec2 samplePos) const {
+	float frequency = 1;
+	float maxNoiseHeight = 0.0f;
+	float amplitude = 1;
+	float noiseHeight = 0;
 
 	for (int i = 0; i < octaves; i++) {
-		perlins.push_back(myMath::Perlin(dist(rng)));
+		glm::vec2 noisePos = samplePos * frequency;
+
+		float value = perlins[i].get(noisePos);
+		noiseHeight += value * amplitude;
+		maxNoiseHeight += amplitude;
+
+		amplitude *= persistance;
+		frequency *= lacunarity;
 	}
 
-	if (scale <= 0.0f) {
-		scale = 0.0001f;
-	}
-
-	float maxNoiseHeight = 0.0f;
-
-	for (int y = 0; y < chunkHeight; y++) {
-		for (int x = 0; x < chunkWidth; x++) {
-			float amplitude = 1;
-			float frequency = 1;
-			float noiseHeight = 0;
-
-			float sampleX = static_cast<float>(x + chunkPos.x) / scale * frequency;
-			float sampleY = static_cast<float>(y + chunkPos.y) / scale * frequency;
-
-			for (int i = 0; i < octaves; i++) {
-				float value = perlins[i].get(sampleX, sampleY);
-				noiseHeight += value * amplitude;
-				maxNoiseHeight += amplitude;
-
-				amplitude *= persistance;
-				frequency *= lacunarity;
-			}
-
-			noiseMap[y][x] = noiseHeight;
-		}
-	}
-
-	for (int y = 0; y < chunkHeight; y++) {
-		for (int x = 0; x < chunkWidth; x++) {
-			noiseMap[y][x] /= maxNoiseHeight;
-		}
-	}
-
-	return noiseMap;
+	return noiseHeight / maxNoiseHeight;
 }
 
-void myTerrain::Terrain::createVertex(std::vector<Vertex>& vertices, uint32_t x, uint32_t y) {
+std::vector<std::vector<std::pair<float, glm::vec3>>> myTerrain::Terrain::generateHeightAndNormalMap(glm::ivec2 chunkPos) const {
+	// create the height map of size + 1 to account for the fact that the height values serve as corner points
+	std::vector<std::vector<std::pair<float, glm::vec3>>> heightAndNormalMap(chunkHeight + 1, std::vector<std::pair<float, glm::vec3>>(chunkWidth + 1, std::make_pair(0.0f, glm::vec3(0.0f))));
 
-	glm::vec2 pos(x, y);
-	pos /= glm::vec2(res_x - 1, res_y - 1);
-	pos -= 0.5f;
-	pos *= glm::vec2(width, height);
-	
-	Vertex vertex = { 0.0f };
+	glm::vec2 shift = glm::vec2(chunkPos) - glm::vec2(chunkWidth, chunkHeight) / 2.0f;
 
-	glm::vec3 vertexPos = glm::vec3(pos.x, perlin.get(pos), pos.y);
-	vertex.vx = vertexPos.x;
-	vertex.vy = vertexPos.y;
-	vertex.vz = vertexPos.z;
+	for (int y = 0; y < chunkHeight + 1; y++) {
+		for (int x = 0; x < chunkWidth + 1; x++) {
+			glm::vec2 samplePos = (glm::vec2(x, y) + shift) / noiseScale;
 
-	glm::vec3 normal = perlin.getNormal(pos);
+			float pointHeight = generateHeightValue(samplePos);
+
+			float delta = 0.032f;
+
+			// point a bit to the right of the original value
+			glm::vec2 posOffsetX = samplePos + glm::vec2(delta, 0.0f);
+			// what is its perlin value
+			float pointHeightX = generateHeightValue(posOffsetX);
+			// a vector from the point to the other one, using the perlin result
+			// as the third dimension
+			glm::vec3 tangentX = glm::normalize(glm::vec3(samplePos.x, pointHeight, samplePos.y) - glm::vec3(posOffsetX.x, pointHeightX, posOffsetX.y));
+
+			// same for Y
+			glm::vec2 posOffsetY = samplePos + glm::vec2(0.0f, delta);
+			float pointHeightY = generateHeightValue(posOffsetY);
+			glm::vec3 tangentY = glm::normalize(glm::vec3(samplePos.x, pointHeight, samplePos.y) - glm::vec3(posOffsetY.x, pointHeightY, posOffsetY.y));
+
+			glm::vec3 normal = glm::normalize(glm::cross(tangentX, tangentY));
+
+			heightAndNormalMap[y][x] = std::make_pair(pointHeight, normal);
+
+			printf("%.3f ", pointHeight);
+		}
+		printf("\n");
+	}
+
+	return heightAndNormalMap;
+}
+
+std::unique_ptr<Mesh<uint32_t>> myTerrain::Terrain::generateMesh(
+	const std::string& meshName,
+	const comps::material& material,
+	const std::vector<std::vector<std::pair<float, glm::vec3>>>& heightAndNormalMap
+) const {
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
+	glm::vec2 shift = -glm::vec2(chunkWidth, chunkHeight) / 2.0f;
+
+	// loop over the corners
+	for (int y = 0; y < chunkHeight + 1; y++) {
+		for (int x = 0; x < chunkWidth + 1; x++) {
+			// generate vertex, the origin of the mesh is is the center;
+			Vertex vertex = createVertex(heightAndNormalMap[y][x].first, glm::vec2(y, x) + shift, heightAndNormalMap[y][x].second);
+			vertices.push_back(vertex);
+
+			if (x == chunkWidth || y == chunkHeight) continue;
+			createIndices(indices, x, y);
+		}
+	}
+
+	return std::make_unique<Mesh<uint32_t>>(meshName, vertices, indices, material);
+}
+
+Vertex myTerrain::Terrain::createVertex(float height, glm::vec2 position, glm::vec3 normal) {
+	Vertex vertex{};
+
+	vertex.vx = position.x;
+	vertex.vy = height;
+	vertex.vz = -position.y;
+
 	vertex.nx = normal.x;
 	vertex.ny = normal.y;
-	vertex.nz = normal.z;
+	vertex.nz = -normal.z;
 
-	vertices.push_back(vertex);
+	return vertex;
 }
 
-//void Terrain::calcIndices(std::vector<uint32_t>& indices, uint32_t x, uint32_t y) {
-//	if (x == res_x - 1 || y == res_y - 1) return;
-//
-//	uint32_t cornerIdxs[4] = {
-//		y*res_x + x,
-//		y*res_x + (x + 1),
-//		(y + 1)*res_x + (x + 1),
-//		(y + 1)*res_x + x
-//	};
-//
-//	indices.push_back(cornerIdxs[0]);
-//	indices.push_back(cornerIdxs[1]);
-//	indices.push_back(cornerIdxs[2]);
-//
-//	indices.push_back(cornerIdxs[2]);
-//	indices.push_back(cornerIdxs[3]);
-//	indices.push_back(cornerIdxs[0]);
-//}
+void myTerrain::Terrain::createIndices(std::vector<uint32_t>& indices, int x, int y) const {
+	int cornerIdxs[4] = {
+		 y      * (chunkWidth + 1) +  x      ,
+		 y      * (chunkWidth + 1) + (x + 1) ,
+		(y + 1) * (chunkWidth + 1) + (x + 1) ,
+		(y + 1) * (chunkWidth + 1) +  x      ,
+	};
 
-//void Terrain::ExportAsModel(const std::string& name, const std::unique_ptr<ModelManager>& modelMngr) {
-//	std::vector<Vertex> vertices;
-//	std::vector<uint32_t> indices;
-//	
-//	// create vertices
-//	for (uint32_t y = 0; y < res_y; y++) {
-//		for (uint32_t x = 0; x < res_x; x++) {
-//			createVertex(vertices, x, y);
-//			calcIndices(indices, x, y);
-//		}
-//	}
-//
-//	modelMngr->AddModel(name);
-//	modelMngr->AddMeshToModel(name, "ground", vertices, indices);
-//}
+	indices.push_back(cornerIdxs[0]);
+	indices.push_back(cornerIdxs[2]);
+	indices.push_back(cornerIdxs[1]);
 
-//struct TerrainType {
-//	std::string name;
-//	float height;
-//	color::RGB color;
-//
-//	TerrainType(std::string name, float height, color::RGB color) : name(name), height(height), color(color) {}
-//};
-
-std::vector<std::vector<C_RGB>> generateColorMap(const std::vector<std::vector<float>>& heightMap, const std::vector<TerrainType>& regions) {
-	size_t map_w = heightMap[0].size();
-	size_t map_h = heightMap.size();
-
-	std::vector<std::vector<C_RGB>> colorMap(map_h, std::vector<C_RGB>(map_w, C_RGB(0.0f)));
-
-	for (int y = 0; y < map_h; y++) {
-		for (int x = 0; x < map_w; x++) {
-			for (const auto& region : regions) {
-				if (heightMap[y][x] <= region.height) {
-					colorMap[y][x] = region.color;
-
-					break;
-				}
-			}
-		}
-	}
-
-	return colorMap;
+	indices.push_back(cornerIdxs[2]);
+	indices.push_back(cornerIdxs[0]);
+	indices.push_back(cornerIdxs[3]);
 }
 
-bool renderToTexture(std::vector<std::vector<C_RGB>> colorMap, Simulation* sim, SDL_Renderer* renderer, int pixelWidth) {
-	// Create / Recreate the texture if needed
-	if (sim->mapTexture == NULL) {
-		sim->mapTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, sim->width * pixelWidth, sim->height * pixelWidth);
-		if (sim->mapTexture == NULL) {
-			Log_Error("Failed to create SDL_Texture.");
-			return false;
-		}
-	}
-	else {
-		int w, h;
-		SDL_QueryTexture(sim->mapTexture, NULL, NULL, &w, &h);
+void myTerrain::Terrain::createEntities(const std::string& chunkName, glm::ivec2 chunkPos) {
+	std::unique_lock<std::mutex> lock(registryEntityCreateMtx);
 
-		if (w != sim->width * pixelWidth || h != sim->height * pixelWidth) {
-			SDL_DestroyTexture(sim->mapTexture);
-			sim->mapTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, sim->width * pixelWidth, sim->height * pixelWidth);
-			if (sim->mapTexture == NULL) {
-				Log_Error("Failed to create SDL_Texture.");
-				return false;
-			}
-		}
+	entt::entity debugSphere = registry->create();
+
+	registry->emplace<comps::position>(debugSphere, glm::vec3(chunkPos.x * chunkWidth, 5.0f, chunkPos.y * chunkHeight));
+	registry->emplace<comps::orientation>(debugSphere);
+	registry->emplace<comps::scale>(debugSphere);
+	registry->emplace<comps::transform>(debugSphere);
+
+	registry->emplace<comps::child>(debugSphere, rootEntity);
+
+	auto debugSphereOffspring = modelMngr->GenEntities("sphere", debugSphere, registry);
+
+	for (const auto& child : *debugSphereOffspring) {
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram(shaderProgramName));
 	}
 
-	SDL_SetRenderTarget(renderer, sim->mapTexture);
+	entt::entity entity = registry->create();
 
-	for (int y = 0; y < sim->height; y++) {
-		for (int x = 0; x < sim->width; x++) {
-			SDL_Rect rect = {
-				x * pixelWidth,
-				y * pixelWidth,
-				pixelWidth,
-				pixelWidth
-			};
+	registry->emplace<comps::position>(entity, glm::vec3(chunkPos.x * chunkWidth, 0.0f, chunkPos.y * chunkHeight));
+	registry->emplace<comps::orientation>(entity);
+	registry->emplace<comps::scale>(entity);
+	registry->emplace<comps::transform>(entity);
 
-			C_RGB color = colorMap[y][x];
+	registry->emplace<comps::child>(entity, rootEntity);
 
-			SDL_SetRenderDrawColor(renderer, color.r * 255, color.g * 255, color.b * 255, 255);
-			SDL_RenderFillRect(renderer, &rect);
-		}
+	auto offspring = modelMngr->GenEntities(chunkName, entity, registry);
+
+	for (const auto& child : *offspring) {
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram(shaderProgramName));
 	}
-
-	SDL_SetRenderTarget(renderer, NULL);
-
-	return true;
-}
-
-void prerenderMapTexture(Simulation* sim, SDL_Renderer* renderer, int map_w, int map_h, int pixelWidth) {
-	if (pixelWidth <= 0) pixelWidth = 1;
-
-	uint32_t seed = std::random_device{}();
-	float scale = 100.0f;
-	int octaves = 5;
-	float persistance = 0.5f;
-	float lacunarity = 2.0f;
-
-	std::vector<TerrainType> regions{};
-
-	regions.push_back(TerrainType(
-		"water1",
-		0.3f,
-		HEX_COLOR(3463C2)
-	));
-
-	regions.push_back(TerrainType(
-		"water2",
-		0.4f,
-		HEX_COLOR(3766C6)
-	));
-
-	regions.push_back(TerrainType(
-		"sand",
-		0.45f,
-		HEX_COLOR(BCC575)
-	));
-
-	regions.push_back(TerrainType(
-		"grass1",
-		0.55f,
-		HEX_COLOR(579717)
-	));
-
-	regions.push_back(TerrainType(
-		"grass2",
-		0.6f,
-		HEX_COLOR(3F6B14)
-	));
-
-	regions.push_back(TerrainType(
-		"rock1",
-		0.7f,
-		HEX_COLOR(56413D)
-	));
-
-	regions.push_back(TerrainType(
-		"rock2",
-		0.9f,
-		HEX_COLOR(423331)
-	));
-
-	regions.push_back(TerrainType(
-		"snow",
-		1.0f,
-		HEX_COLOR(D1D1D1)
-	));
-
-	std::sort(regions.begin(), regions.end(), [](const TerrainType& t1, const TerrainType& t2) { return t1.height < t2.height; });
-
-	scale /= pixelWidth;
-
-	auto noiseMap = generateHeightMap(map_w, map_h, scale, seed, octaves, persistance, lacunarity);
-	auto colorMap = generateColorMap(noiseMap, regions);
-
-	sim->width = map_w;
-	sim->height = map_h;
-
-	bool res = renderToTexture(colorMap, sim, renderer, pixelWidth);
-	if (!res) return;
-
-	Log_Info("Successfully prerendered map texture.");
 }

@@ -11,9 +11,9 @@
 #include "comps/light.h"
 
 entt::entity factories::createTree(
-	const std::unique_ptr<entt::registry>& registry,
-	const std::unique_ptr<ModelManager>& modelMngr,
-	const std::unique_ptr<ProgramManager>& prgMngr,
+	const std::shared_ptr<entt::registry>& registry,
+	const std::shared_ptr<ModelManager>& modelMngr,
+	const std::shared_ptr<ProgramManager>& prgMngr,
 	glm::vec3 pos, glm::vec3 scale
 ) {
 	auto tree = registry->create();
@@ -33,9 +33,9 @@ entt::entity factories::createTree(
 }
 
 entt::entity factories::createTemple(
-	const std::unique_ptr<entt::registry>& registry,
-	const std::unique_ptr<ModelManager>& modelMngr,
-	const std::unique_ptr<ProgramManager>& prgMngr,
+	const std::shared_ptr<entt::registry>& registry,
+	const std::shared_ptr<ModelManager>& modelMngr,
+	const std::shared_ptr<ProgramManager>& prgMngr,
 	glm::vec3 pos, glm::vec3 rot, glm::vec3 scale
 ) {
 	auto temple = registry->create();
@@ -46,12 +46,12 @@ entt::entity factories::createTemple(
 	glm::quat x = glm::angleAxis(glm::radians(rot.y), VEC_RIGHT);
 	glm::quat z = glm::angleAxis(glm::radians(rot.z), VEC_FORWARD);
 	registry->emplace<comps::orientation>(temple, z * x * y);
-	
+
 	registry->emplace<comps::scale>(temple, scale);
 	registry->emplace<comps::transform>(temple);
 
 	auto offspring = modelMngr->GenEntities("temple", temple, registry);
-	
+
 	for (const auto& child : *offspring) {
 		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
 	}
@@ -60,8 +60,8 @@ entt::entity factories::createTemple(
 }
 
 entt::entity factories::createDirLight(
-	const std::unique_ptr<entt::registry>& registry,
-	const myColor::RGB& color,
+	const std::shared_ptr<entt::registry>& registry,
+	const myColor::RedGreenBlue& color,
 	float ambient, float diffuse, float specular,
 	float yaw, float pitch, float roll
 ) {

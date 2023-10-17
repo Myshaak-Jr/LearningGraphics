@@ -146,6 +146,7 @@
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\color.cpp" />
     <ClCompile Include="src\factories.cpp" />
+    <ClCompile Include="src\myMath.cpp" />
     <ClCompile Include="src\perlin.cpp" />
     <ClCompile Include="src\programManager.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -171,9 +172,11 @@
     <ClInclude Include="src\comps\orientation.h" />
     <ClInclude Include="src\comps\scale.h" />
     <ClInclude Include="src\comps\shaderProgram.h" />
+    <ClInclude Include="src\comps\terrainComps.h" />
     <ClInclude Include="src\comps\transform.h" />
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\factories.h" />
+    <ClInclude Include="src\myMath.h" />
     <ClInclude Include="src\perlin.h" />
     <ClInclude Include="src\programManager.h" />
     <ClInclude Include="src\modelManager.h" />

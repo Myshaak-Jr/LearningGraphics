@@ -6,6 +6,8 @@
 #include <memory>
 #include <iostream>
 #include <sstream>
+#include <mutex>
+#include <syncstream>
 
 #include <SDL2/SDL_stdinc.h>
 #include <glad/glad.h>
@@ -62,6 +64,8 @@ public:
 	~Mesh() = default;
 
 	std::pair<comps::mesh, comps::material> exportComponents() const override;
+
+	const std::string& getName() const;
 };
 
 class Model {
@@ -82,16 +86,24 @@ public:
 	/*
 	 * Returns a map of all the other entities, where the key is the name of the mesh
 	 */
-	std::unique_ptr<std::unordered_map<std::string, entt::entity>> generateEntities(entt::entity root, const std::unique_ptr<entt::registry>& registry);
+	std::unique_ptr<std::unordered_map<std::string, entt::entity>> generateEntities(entt::entity root, const std::shared_ptr<entt::registry>& registry);
 
 	template <class TIndex>
 	void addMesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material);
+
+	template <class TIndex>
+	void addMesh(const Mesh<TIndex>& mesh);
+	
+	template <class TIndex>
+	void addMesh(std::unique_ptr<Mesh<TIndex>> mesh);
 };
 
+/* thread-safe model manager */
 class ModelManager {
 private:
 	// Private members
 	std::unordered_map<std::string, Model> models;
+	std::mutex mtx;
 
 	// Private methods
 	void assertExisting(const std::string& name) const;
@@ -104,10 +116,17 @@ public:
 	void LoadModel(const std::string& name, const char* filename, const char* materialPath, bool triangulate = true);
 	void AddModel(const std::string& name);
 	
-	std::unique_ptr<std::unordered_map<std::string, entt::entity>> GenEntities(const std::string& name, entt::entity, const std::unique_ptr<entt::registry>& registry);
+	/* This function is using non-thread-safe registry and should be called with caution */
+	std::unique_ptr<std::unordered_map<std::string, entt::entity>> GenEntities(const std::string& name, entt::entity root, const std::shared_ptr<entt::registry>& registry);
 
 	template <class TIndex>
 	void AddMeshToModel(const std::string& modelName, const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material);
+
+	template <class TIndex>
+	void AddMeshToModel(const std::string& modelName, const Mesh<TIndex>& mesh);
+
+	template <class TIndex>
+	void AddMeshToModel(const std::string& modelName, std::unique_ptr<Mesh<TIndex>> mesh);
 };
 
 
@@ -179,16 +198,16 @@ template <class TIndex>
 void Mesh<TIndex>::loadMaterial(const std::vector<tinyobj::material_t>& materials, const tinyobj::shape_t& shape) {
 	if (shape.mesh.material_ids.empty()) {
 		std::cout << "Warning: Mesh " << name << " has no material, using default white one.";
-		material = comps::material(myColor::RGB(1.0f), myColor::RGB(0.8f), myColor::RGB(0.5f), 255.0f);
+		material = comps::material(myColor::RedGreenBlue(1.0f), myColor::RedGreenBlue(0.8f), myColor::RedGreenBlue(0.5f), 255.0f);
 		return;
 	}
 
 	int material_id = shape.mesh.material_ids[0];
 	const tinyobj::material_t& mat = materials[material_id];
 	
-	myColor::RGB ambient{ mat.ambient[0], mat.ambient[1] , mat.ambient[2] };
-	myColor::RGB diffuse{ mat.diffuse[0], mat.diffuse[1] , mat.diffuse[2] };
-	myColor::RGB specular{ mat.specular[0], mat.specular[1] , mat.specular[2] };
+	myColor::RedGreenBlue ambient{ mat.ambient[0], mat.ambient[1] , mat.ambient[2] };
+	myColor::RedGreenBlue diffuse{ mat.diffuse[0], mat.diffuse[1] , mat.diffuse[2] };
+	myColor::RedGreenBlue specular{ mat.specular[0], mat.specular[1] , mat.specular[2] };
 	float shininess = mat.shininess;
 
 	material = comps::material(ambient, diffuse, specular, shininess);
@@ -270,6 +289,12 @@ std::pair<comps::mesh, comps::material> Mesh<TIndex>::exportComponents() const {
 }
 
 template <class TIndex>
+const std::string& Mesh<TIndex>::getName() const {
+	return name;
+}
+
+
+template <class TIndex>
 void Model::addMesh(const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<TIndex>& indices, const comps::material& material) {
 	if (meshes.find(meshName) != meshes.end()) {
 		std::stringstream ss;
@@ -283,6 +308,37 @@ void Model::addMesh(const std::string& meshName, const std::vector<Vertex>& vert
 	genMeshComp(meshName);
 }
 
+template <class TIndex>
+void Model::addMesh(const Mesh<TIndex>& mesh) {
+	const std::string& meshName = mesh.getName();
+
+	if (meshes.find(meshName) != meshes.end()) {
+		std::stringstream ss;
+		ss << "Mesh with name " << meshName << " already exists in model " << name << "." << std::endl;
+		throw std::runtime_error(ss.str());
+	}
+
+	meshes.insert(std::make_pair(meshName, std::make_unique<Mesh<TIndex>>(mesh)));
+
+	// Generate OpenGL objects for this mesh
+	genMeshComp(meshName);
+}
+
+template <class TIndex>
+void Model::addMesh(std::unique_ptr<Mesh<TIndex>> mesh) {
+	const std::string& meshName = mesh->getName();
+
+	if (meshes.find(meshName) != meshes.end()) {
+		std::stringstream ss;
+		ss << "Mesh with name " << meshName << " already exists in model " << name << "." << std::endl;
+		throw std::runtime_error(ss.str());
+	}
+
+	meshes.insert(std::make_pair(meshName, std::move(mesh)));
+
+	// Generate OpenGL objects for this mesh
+	genMeshComp(meshName);
+}
 
 template <class TIndex>
 void ModelManager::AddMeshToModel(
@@ -294,5 +350,38 @@ void ModelManager::AddMeshToModel(
 ) {
 	assertExisting(modelName);
 
-	models.at(modelName).addMesh(meshName, vertices, indices, material);
+	{
+		std::unique_lock<std::mutex> lock(mtx);
+		models.at(modelName).addMesh(meshName, vertices, indices, material);
+	}
+
+	std::osyncstream(std::cout) << "Added mesh " << meshName << " to model " << modelName << std::endl;
+}
+
+template <class TIndex>
+void ModelManager::AddMeshToModel(const std::string& modelName, const Mesh<TIndex>& mesh) {
+	assertExisting(modelName);
+
+	std::string meshName = mesh.getName();
+
+	{
+		std::unique_lock<std::mutex> lock(mtx);
+		models.at(modelName).addMesh(mesh);
+	}
+
+	std::osyncstream(std::cout) << "Added mesh " << meshName << " to model " << modelName << std::endl;
+}
+
+template <class TIndex>
+void ModelManager::AddMeshToModel(const std::string& modelName, std::unique_ptr<Mesh<TIndex>> mesh) {
+	assertExisting(modelName);
+
+	std::string meshName = mesh->getName();
+
+	{
+		std::unique_lock<std::mutex> lock(mtx);
+		models.at(modelName).addMesh(std::move(mesh));
+	}
+
+	std::osyncstream(std::cout) << "Added mesh " << meshName << " to model " << modelName << std::endl;
 }

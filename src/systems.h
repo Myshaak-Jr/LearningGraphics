@@ -16,27 +16,27 @@
 
 
 namespace systems {
-	void orbitPos(const std::unique_ptr<entt::registry>& registry);
+	void orbitPos(const std::shared_ptr<entt::registry>& registry);
 
-	void keyboardMove(const std::unique_ptr<entt::registry>& registry, float dt);
+	void keyboardMove(const std::shared_ptr<entt::registry>& registry, float dt);
 	template <Axis A>
-	void keyboardMoveInAxis(const std::unique_ptr<entt::registry>& registry, float dt);
+	void keyboardMoveInAxis(const std::shared_ptr<entt::registry>& registry, float dt);
 
-	void keyboardRotate(const std::unique_ptr<entt::registry>& registry, float dt);
+	void keyboardRotate(const std::shared_ptr<entt::registry>& registry, float dt);
 	template <EAngle A>
-	void keyboardRotateAroundAngle(const std::unique_ptr<entt::registry>& registry, float dt);
+	void keyboardRotateAroundAngle(const std::shared_ptr<entt::registry>& registry, float dt);
 
-	void dynamicallyScale(const std::unique_ptr<entt::registry>& registry);
+	void dynamicallyScale(const std::shared_ptr<entt::registry>& registry);
 
-	void calcTransforms(const std::unique_ptr<entt::registry>& registry);
-	void clearTransformCache(const std::unique_ptr<entt::registry>& registry);
-	void calcAbsoluteTransform(const std::unique_ptr<entt::registry>& registry);
+	void calcTransforms(const std::shared_ptr<entt::registry>& registry);
+	void clearTransformCache(const std::shared_ptr<entt::registry>& registry);
+	void calcAbsoluteTransform(const std::shared_ptr<entt::registry>& registry);
 
-	void render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::unique_ptr<ProgramManager>& prgMngr);
+	void render(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::shared_ptr<ProgramManager>& prgMngr);
 }
 
 template <Axis A>
-void systems::keyboardMoveInAxis(const std::unique_ptr<entt::registry>& registry, float dt) {
+void systems::keyboardMoveInAxis(const std::shared_ptr<entt::registry>& registry, float dt) {
 	auto view = registry->view<comps::position, const comps::movedByKeyboard<A>>();
 
 	for (auto [entity, pos, ctrl] : view.each()) {
@@ -76,7 +76,7 @@ void systems::keyboardMoveInAxis(const std::unique_ptr<entt::registry>& registry
 }
 
 template <EAngle A>
-void systems::keyboardRotateAroundAngle(const std::unique_ptr<entt::registry>& registry, float dt) {
+void systems::keyboardRotateAroundAngle(const std::shared_ptr<entt::registry>& registry, float dt) {
 	auto view = registry->view<comps::orientation, const comps::rotatedByKeyboard<A>>();
 
 	for (auto [entity, rot, ctrl] : view.each()) {

@@ -17,7 +17,7 @@
 #include "comps/light.h"
 
 
-void systems::orbitPos(const std::unique_ptr<entt::registry>& registry) {
+void systems::orbitPos(const std::shared_ptr<entt::registry>& registry) {
 	auto view = registry->view<const comps::orbiting, comps::position>();
 	
 	for (auto [entity, orbit, pos] : view.each()) {
@@ -26,19 +26,19 @@ void systems::orbitPos(const std::unique_ptr<entt::registry>& registry) {
 	}
 }
 
-void systems::keyboardMove(const std::unique_ptr<entt::registry>& registry, float dt) {
+void systems::keyboardMove(const std::shared_ptr<entt::registry>& registry, float dt) {
 	keyboardMoveInAxis<Axis::X>(registry, dt);
 	keyboardMoveInAxis<Axis::Y>(registry, dt);
 	keyboardMoveInAxis<Axis::Z>(registry, dt);
 }
 
-void systems::keyboardRotate(const std::unique_ptr<entt::registry>& registry, float dt) {
+void systems::keyboardRotate(const std::shared_ptr<entt::registry>& registry, float dt) {
 	keyboardRotateAroundAngle<EAngle::YAW>(registry, dt);
 	keyboardRotateAroundAngle<EAngle::PITCH>(registry, dt);
 	keyboardRotateAroundAngle<EAngle::ROLL>(registry, dt);
 }
 
-void systems::dynamicallyScale(const std::unique_ptr<entt::registry>& registry) {
+void systems::dynamicallyScale(const std::shared_ptr<entt::registry>& registry) {
 	auto view = registry->view<comps::scale, const comps::dynamicallyScaled>();
 	for (auto [e, scale, dynScale] : view.each()) {
 		glm::vec3 lerpFactor = glm::mod(glm::vec3(SDL_GetTicks64() / 1000.0f), dynScale.duration) / dynScale.duration;
@@ -55,7 +55,7 @@ void systems::dynamicallyScale(const std::unique_ptr<entt::registry>& registry) 
 
 /* Render */
 
-void systems::calcTransforms(const std::unique_ptr<entt::registry>& registry) {
+void systems::calcTransforms(const std::shared_ptr<entt::registry>& registry) {
 	auto view = registry->view<comps::transform, const comps::position, const comps::orientation, const comps::scale>();
 
 	for (auto [e, transform, pos, rot, scl] : view.each()) {
@@ -67,7 +67,7 @@ void systems::calcTransforms(const std::unique_ptr<entt::registry>& registry) {
 	}
 }
 
-void systems::clearTransformCache(const std::unique_ptr<entt::registry>& registry) {
+void systems::clearTransformCache(const std::shared_ptr<entt::registry>& registry) {
 	auto view = registry->view<comps::child>();
 
 	for (auto [e, child] : view.each()) {
@@ -75,7 +75,7 @@ void systems::clearTransformCache(const std::unique_ptr<entt::registry>& registr
 	}
 }
 
-void systems::calcAbsoluteTransform(const std::unique_ptr<entt::registry>& registry) {
+void systems::calcAbsoluteTransform(const std::shared_ptr<entt::registry>& registry) {
 	auto view = registry->view<comps::child, comps::transform>();
 
 	for (auto [entity, child, transform] : view.each()) {
@@ -135,7 +135,7 @@ void systems::calcAbsoluteTransform(const std::unique_ptr<entt::registry>& regis
 	}
 }
 
-void setDirLightUniforms(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<ProgramManager>& prgMngr) {
+void setDirLightUniforms(const std::shared_ptr<entt::registry>& registry, const std::shared_ptr<ProgramManager>& prgMngr) {
 	auto view = registry->view<const comps::dirLight, const comps::lightEmitter, const comps::orientation>();
 
 	for (const auto& prg : prgMngr->getShaderPrograms()) {
@@ -178,11 +178,11 @@ void setDirLightUniforms(const std::unique_ptr<entt::registry>& registry, const 
 }
 
 
-void setLightUniforms(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<ProgramManager>& prgMngr) {
+void setLightUniforms(const std::shared_ptr<entt::registry>& registry, const std::shared_ptr<ProgramManager>& prgMngr) {
 	setDirLightUniforms(registry, prgMngr);
 }
 
-void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::unique_ptr<ProgramManager>& prgMngr) {
+void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::shared_ptr<ProgramManager>& prgMngr) {
 	// TODO: use uniform buffers
 	for (const auto& prg : prgMngr->getShaderPrograms()) {
 		GLenum err;
@@ -201,7 +201,7 @@ void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::unique_
 	glUseProgram(0);
 }
 
-void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
+void renderEntities(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
 	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform, const comps::material>();
 	for (auto [entity, mesh, prg, transform, material] : view.each()) {
 		GLenum err;
@@ -245,7 +245,7 @@ void renderEntities(const std::unique_ptr<entt::registry>& registry, const std::
 	}
 }
 
-void systems::render(const std::unique_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::unique_ptr<ProgramManager>& prgMngr) {
+void systems::render(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::shared_ptr<ProgramManager>& prgMngr) {
 	setLightUniforms(registry, prgMngr);
 	setCameraUniforms(camera, prgMngr);
 	renderEntities(registry, camera);

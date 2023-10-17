@@ -1,32 +1,21 @@
 ﻿#include "perlin.h"
-
+#include "myMath.h"
 
 
 myMath::Perlin::Perlin(uint32_t seed) : seed(seed) {}
 
-uint32_t myMath::Perlin::hashPos(glm::ivec2 pos) {
-	uint32_t x = std::hash<int>{}(pos.x);
-	uint32_t y = std::hash<int>{}(pos.y);
-
-	uint32_t hash = seed;
-	hash ^= x + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-	hash ^= y + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-
-	return hash;
+float myMath::Perlin::calcAngle(glm::ivec2 pos) const {
+	return (myMath::hashPos(pos, seed) / static_cast<float>(UINT32_MAX)) * 360.0f;
 }
 
-float myMath::Perlin::calcAngle(glm::ivec2 pos) {
-	return (hashPos(pos) / static_cast<float>(UINT32_MAX)) * 360.0f;
-}
-
-glm::vec2 myMath::Perlin::calcGradientVec(glm::ivec2 pos) {
+glm::vec2 myMath::Perlin::calcGradientVec(glm::ivec2 pos) const {
 	float angle = calcAngle(pos);
 
 	return glm::vec2(cos(angle), sin(angle));
 }
 
 
-float myMath::Perlin::get(glm::vec2 position) {
+float myMath::Perlin::get(glm::vec2 position) const {
 	const glm::ivec2 top_left = glm::floor(position);
 
 	float dotProducts[4] = {};
@@ -46,5 +35,3 @@ float myMath::Perlin::get(glm::vec2 position) {
 	const float value = glm::mix(i1, i2, glm::smoothstep(0.0f, 1.0f, rel.y));
 	return (value + 1.0f) * 0.5f;
 }
-
-float myMath::Perlin::get(float x, float y) { return get(glm::vec2(x, y)); };
