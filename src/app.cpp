@@ -1,6 +1,7 @@
 #include "app.h"
 
 #include <iostream>
+#include <random>
 
 #include <glm/ext/scalar_constants.hpp>
 
@@ -26,15 +27,8 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	prgMngr = std::make_shared<ProgramManager>();
 	modelMngr = std::make_shared<ModelManager>();
 	registry = std::make_shared<entt::registry>();
-	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 0.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
-	
-	terrain = std::make_unique<myTerrain::Terrain>(
-		"gameMap", modelMngr,
-		"diffuse", prgMngr,
-		registry, registryEntityCreateMtx,
-		glm::vec3(0.0f), 0.0f, 0.0f, 0.0f, glm::vec3(1.0f),
-		20, 0.3f, 1, 0.5f, 2.0f, 69
-	);
+	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 20.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
+	postprocess = std::make_unique<PostprocessManager>(width, height, "./shaders/postprocess-vertex.glsl", "./shaders/postprocess-fragment.glsl");
 }
 
 App::~App() {
@@ -87,37 +81,26 @@ void App::createContext(int width, int height) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-
 	//glEnable(GL_DEPTH_CLAMP);
 }
 
 void App::loadScene() {
 	loadGLObjects();
 	loadEntities();
-	int x = 0, y = 0;
-	//for (int y = -20; y < 21; y++) {
-	//	for (int x = -20; x < 21; x++) {
-			terrain->loadChunk(glm::ivec2(x, y));
-	//	}
-	//}
 }
 
 void App::loadGLObjects() {
 	// load shader programs
-	prgMngr->LoadShaderProgram("diffuse",
-		{ { GL_VERTEX_SHADER, "./shaders/vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/fragment.glsl" } },
+	prgMngr->LoadShaderProgram("phong-lighting",
+		{ { GL_VERTEX_SHADER, "./shaders/model.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/phong-lighting.glsl" } },
 		true
-	);
-
-	prgMngr->LoadShaderProgram("terrain",
-		{ { GL_VERTEX_SHADER, "./shaders/terrain-vertex.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/terrain-fragment.glsl" } },
-		false
 	);
 
 	// load models
 	//modelMngr->LoadModel("tree", "models/tree.obj", "models/");
 	//modelMngr->LoadModel("temple", "models/temple.obj", "models/");
 	modelMngr->LoadModel("sphere", "models/sphere.obj", "models/");
+	modelMngr->LoadModel("temple", "models/temple.obj", "models/");
 }
 
 void App::loadEntities() {
@@ -134,33 +117,27 @@ void App::loadEntities() {
 	//	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
 	//}
 
-	auto light = factories::createDirLight(registry, myColor::RedGreenBlue("#FFFFFF"),
+	auto light = factories::createDirLight(registry, myColor::RGB("#FFFFFF"),
 		0.1f, 0.5f, 0.7f,
 		30.0f, 30.0f, 0.0f
 	);
 	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
 
 
-	//auto sphere = registry->create();
+	std::mt19937 rng(std::random_device{}());
+	std::uniform_real_distribution<float> dist{-5.0f, 5.0f};
 
-	//registry->emplace<comps::position>(sphere, glm::vec3(0.0f, 0.0f, -20.0f));
-	//registry->emplace<comps::orientation>(sphere);
-	//registry->emplace<comps::scale>(sphere, glm::vec3(3.0f));
-	//registry->emplace<comps::transform>(sphere);
-
-	//auto offspring = modelMngr->GenEntities("sphere", sphere, registry);
-
-	//for (const auto& child : *offspring) {
-	//	registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
-	//}
-
-
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3( 1.5f,  0.0f, 1.5f), glm::vec3(1.0f));
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, 1.5f), glm::vec3(1.0f));
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
-	//factories::createTree(registry, modelMngr, prgMngr, glm::vec3(-1.5f, 0.0f, -1.5f), glm::vec3(1.0f));
+	const int numSpheres = 5;
 	
-	//auto temple = factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -15.0f), glm::vec3(0.0f), glm::vec3(1.0f));
+	const myColor::LCH start = myColor::RGB("#2dbd54");
+	const myColor::LCH end = myColor::RGB("#bd942d");
+
+	for (int i = 0; i < numSpheres; i++) {
+		myColor::RGB color = myColor::lerpLCH(start, end, static_cast<float>(i) / static_cast<float>(numSpheres));
+		factories::createSphere(registry, modelMngr, prgMngr, glm::vec3(dist(rng), dist(rng), dist(rng)), glm::vec3(0.0f), glm::vec3(1.0f), color);
+	}
+
+	factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, 40.0f), glm::vec3(0.0f), glm::vec3(1.0f));
 }
 
 void App::run() {
@@ -234,23 +211,30 @@ void App::update(float dt) {
 	systems::keyboardMove(registry, dt);
 	
 	systems::dynamicallyScale(registry);
-}
-
-void App::render() {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClearDepth(1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	systems::calcTransforms(registry);
 	systems::clearTransformCache(registry);
 	systems::calcAbsoluteTransform(registry);
+}
+
+void App::render() {
+	myColor::RGB bgColor = myColor::RGB("#615d54");
+
+	//glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
+	//glClearDepth(1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+	postprocess->BeforeRender(bgColor);
 	systems::render(registry, camera, prgMngr);
+	postprocess->AfterRender();
 
 	SDL_GL_SwapWindow(window.get());
 }
 
 void App::resize(int width, int height) {
 	camera->resizeCallback(width, height);
+	postprocess->Resize(width, height);
 
 	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 }

@@ -10,8 +10,8 @@
 
 #include "programManager.h"
 #include "modelManager.h"
+#include "postprocessManager.h"
 #include "camera.h"
-#include "terrain.h"
 
 
 class App {
@@ -27,9 +27,11 @@ private:
 	
 	std::shared_ptr<ProgramManager> prgMngr;
 	std::shared_ptr<ModelManager> modelMngr;
-	std::unique_ptr<myTerrain::Terrain> terrain;
 
 	std::unique_ptr<Camera> camera;
+
+	std::unique_ptr<PostprocessManager> postprocess;
+
 
 	//std::unique_ptr<Terrain> terrain;
 
@@ -38,6 +40,7 @@ private:
 	void setGLAttributes();
 	void createWindow(int width, int height);
 	void createContext(int width, int height);
+	void createFramebuffer(int width, int height);
 
 	void loadGLObjects();
 	

@@ -4,7 +4,7 @@
 
 namespace comps {
 	struct lightEmitter {
-		myColor::RedGreenBlue color;
+		myColor::RGB color;
 
 		float ambient;
 		float diffuse;

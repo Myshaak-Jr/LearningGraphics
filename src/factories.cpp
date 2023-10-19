@@ -26,7 +26,7 @@ entt::entity factories::createTree(
 	auto offspring = modelMngr->GenEntities("tree", tree, registry);
 
 	for (const auto& child : *offspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("phong-lighting"));
 	}
 
 	return tree;
@@ -53,15 +53,44 @@ entt::entity factories::createTemple(
 	auto offspring = modelMngr->GenEntities("temple", temple, registry);
 
 	for (const auto& child : *offspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("diffuse"));
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("phong-lighting"));
 	}
 
 	return temple;
 }
 
+entt::entity factories::createSphere(
+	const std::shared_ptr<entt::registry>& registry,
+	const std::shared_ptr<ModelManager>& modelMngr,
+	const std::shared_ptr<ProgramManager>& prgMngr,
+	glm::vec3 pos, glm::vec3 rot, glm::vec3 scale,
+	myColor::RGB color
+) {
+	auto sphere = registry->create();
+
+	registry->emplace<comps::position>(sphere, pos);
+
+	glm::quat y = glm::angleAxis(glm::radians(rot.x), VEC_UP);
+	glm::quat x = glm::angleAxis(glm::radians(rot.y), VEC_RIGHT);
+	glm::quat z = glm::angleAxis(glm::radians(rot.z), VEC_FORWARD);
+	registry->emplace<comps::orientation>(sphere, z * x * y);
+
+	registry->emplace<comps::scale>(sphere, scale);
+	registry->emplace<comps::transform>(sphere);
+
+	auto offspring = modelMngr->GenEntities("sphere", sphere, registry);
+
+	for (const auto& child : *offspring) {
+		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("phong-lighting"));
+		registry->emplace_or_replace<comps::material>(child.second, color, color, myColor::RGB(0.5f), 16.0f);
+	}
+
+	return sphere;
+}
+
 entt::entity factories::createDirLight(
 	const std::shared_ptr<entt::registry>& registry,
-	const myColor::RedGreenBlue& color,
+	const myColor::RGB& color,
 	float ambient, float diffuse, float specular,
 	float yaw, float pitch, float roll
 ) {

@@ -1,4 +1,4 @@
-#version 410
+#version 410 core
 
 struct Material {
 	vec3 ambient;
@@ -14,7 +14,8 @@ struct DirLight {
 	vec3 specular;
 };
 
-out vec4 fragColor;
+layout(location = 0) out vec4 FragColor;
+layout(location = 1) out vec4 NormalColor;
 
 in vec3 Normal;
 in vec3 FragPos;
@@ -38,7 +39,8 @@ void main() {
 		result += calcDirLight(dirLights[i], viewDir, norm);
 	}
 
-	fragColor = vec4(result, 1.0f);
+	FragColor = vec4(result, 1.0f);
+	NormalColor = vec4((1.0 + norm) * 0.5, 1.0f);
 }
 
 vec3 calcDirLight(DirLight light, vec3 viewDir, vec3 normal) {

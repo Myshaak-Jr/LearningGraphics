@@ -148,11 +148,11 @@
     <ClCompile Include="src\factories.cpp" />
     <ClCompile Include="src\myMath.cpp" />
     <ClCompile Include="src\perlin.cpp" />
+    <ClCompile Include="src\postprocessManager.cpp" />
     <ClCompile Include="src\programManager.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\modelManager.cpp" />
     <ClCompile Include="src\systems.cpp" />
-    <ClCompile Include="src\terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\glad\glad.h" />
@@ -178,10 +178,10 @@
     <ClInclude Include="src\factories.h" />
     <ClInclude Include="src\myMath.h" />
     <ClInclude Include="src\perlin.h" />
+    <ClInclude Include="src\postprocessManager.h" />
     <ClInclude Include="src\programManager.h" />
     <ClInclude Include="src\modelManager.h" />
     <ClInclude Include="src\systems.h" />
-    <ClInclude Include="src\terrain.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

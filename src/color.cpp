@@ -6,7 +6,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/glm.hpp>
 
-myColor::XYZ RGB_to_XYZ(myColor::RedGreenBlue rgb) {
+myColor::XYZ RGB_to_XYZ(myColor::RGB rgb) {
 	float r, g, b;
 
 	r = (rgb.r > 0.04045f) ? powf(((rgb.r + 0.055f) / 1.055f), 2.4f) : rgb.r / 12.92f;
@@ -91,7 +91,7 @@ myColor::XYZ LAB_to_XYZ(myColor::LAB lab) {
 	return myColor::XYZ{ x, y, z };
 }
 
-myColor::RedGreenBlue XYZ_to_RGB(myColor::XYZ xyz) {
+myColor::RGB XYZ_to_RGB(myColor::XYZ xyz) {
 	// Observer = 2°, Illuminant = D65
 	const float x = xyz.x / 100.0f; // X from 0 to 95.047
 	const float y = xyz.y / 100.0f; // Y from 0 to 100.000
@@ -105,14 +105,14 @@ myColor::RedGreenBlue XYZ_to_RGB(myColor::XYZ xyz) {
 	g = (g > 0.0031308f) ? 1.055f * (powf(g, 0.41666667f)) - 0.055f : 12.92f * g;
 	b = (b > 0.0031308f) ? 1.055f * (powf(b, 0.41666667f)) - 0.055f : 12.92f * b;
 
-	return myColor::RedGreenBlue{ r, g, b };
+	return myColor::RGB{ r, g, b };
 }
 
-myColor::RedGreenBlue::RedGreenBlue(float r, float g, float b) : r(r), g(g), b(b) {}
-myColor::RedGreenBlue::RedGreenBlue(int r, int g, int b) : RedGreenBlue(r / 255.0f, g / 255.0f, b / 255.0f) {}
-myColor::RedGreenBlue::RedGreenBlue(float b) : RedGreenBlue(b, b, b) {}
+myColor::RGB::RGB(float r, float g, float b) : r(r), g(g), b(b) {}
+myColor::RGB::RGB(int r, int g, int b) : RGB(r / 255.0f, g / 255.0f, b / 255.0f) {}
+myColor::RGB::RGB(float b) : RGB(b, b, b) {}
 
-myColor::RedGreenBlue::RedGreenBlue(const std::string& hex) {
+myColor::RGB::RGB(const std::string& hex) {
 	// Check if the string has a valid length
 	if (hex.size() != 7 || hex[0] != '#') {
 		throw std::invalid_argument("Invalid hex format.");
@@ -135,35 +135,35 @@ myColor::RedGreenBlue::RedGreenBlue(const std::string& hex) {
 	b = hexToNormalizedValue(hex, 5);
 }
 
-myColor::RedGreenBlue::RedGreenBlue() : RedGreenBlue(0.0f) {}
+myColor::RGB::RGB() : RGB(0.0f) {}
 
-myColor::RedGreenBlue::RedGreenBlue(const XYZ& xyz) {
-	RedGreenBlue color = XYZ_to_RGB(xyz);
+myColor::RGB::RGB(const XYZ& xyz) {
+	RGB color = XYZ_to_RGB(xyz);
 	r = color.r;
 	g = color.g;
 	b = color.b;
 }
-myColor::RedGreenBlue::RedGreenBlue(const LAB& lab) {
-	RedGreenBlue color = XYZ_to_RGB(XYZ(lab));
+myColor::RGB::RGB(const LAB& lab) {
+	RGB color = XYZ_to_RGB(XYZ(lab));
 	r = color.r;
 	g = color.g;
 	b = color.b;
 }
-myColor::RedGreenBlue::RedGreenBlue(const LCH& lch) {
-	RedGreenBlue color = XYZ_to_RGB(XYZ(lch));
+myColor::RGB::RGB(const LCH& lch) {
+	RGB color = XYZ_to_RGB(XYZ(lch));
 	r = color.r;
 	g = color.g;
 	b = color.b;
 }
 
-glm::vec3 myColor::RedGreenBlue::toVec3() const {
+glm::vec3 myColor::RGB::toVec3() const {
 	return glm::vec3(r, g, b);
 }
 
 myColor::XYZ::XYZ(float x, float y, float z) : x(x), y(y), z(z) {}
 myColor::XYZ::XYZ() : XYZ(0.0f, 0.0f, 0.0f) {}
 
-myColor::XYZ::XYZ(const RedGreenBlue& rgb) {
+myColor::XYZ::XYZ(const RGB& rgb) {
 	XYZ color = RGB_to_XYZ(rgb);
 	x = color.x;
 	y = color.y;
@@ -185,7 +185,7 @@ myColor::XYZ::XYZ(const LCH& lch) {
 myColor::LAB::LAB(float l, float a, float b) : l(l), a(a), b(b) {}
 myColor::LAB::LAB() : LAB(0.0f, 0.0f, 0.0f) {}
 
-myColor::LAB::LAB(const RedGreenBlue& rgb) {
+myColor::LAB::LAB(const RGB& rgb) {
 	LAB color = XYZ_to_LAB(XYZ(rgb));
 	l = color.l;
 	a = color.a;
@@ -207,7 +207,7 @@ myColor::LAB::LAB(const LCH& lch) {
 myColor::LCH::LCH(float l, float c, float h) : l(l), c(c), h(h) {}
 myColor::LCH::LCH() : LCH(0.0f, 0.0f, 0.0f) {}
 
-myColor::LCH::LCH(const RedGreenBlue& rgb) {
+myColor::LCH::LCH(const RGB& rgb) {
 	LCH color = LAB_to_LCH(LAB(rgb));
 	l = color.l;
 	c = color.c;
@@ -236,16 +236,16 @@ myColor::LCH myColor::lerpLCH(const LCH& c1, const LCH& c2, float t) {
 	return result;
 }
 
-myColor::RedGreenBlue myColor::lerpRGB(const RedGreenBlue& c1, const RedGreenBlue& c2, float t) {
-	myColor::RedGreenBlue result;
+myColor::RGB myColor::lerpRGB(const RGB& c1, const RGB& c2, float t) {
+	myColor::RGB result;
 	result.r = glm::mix(c1.r, c2.r, t);
 	result.g = glm::mix(c1.g, c2.g, t);
 	result.b = glm::mix(c1.b, c2.b, t);
 	return result;
 }
 
-myColor::RedGreenBlue myColor::averageRGB(const RedGreenBlue& c1, const RedGreenBlue& c2) {
-	myColor::RedGreenBlue result;
+myColor::RGB myColor::averageRGB(const RGB& c1, const RGB& c2) {
+	myColor::RGB result;
 	result.r = (c1.r + c2.r);
 	result.g = (c1.g + c2.g);
 	result.b = (c1.b + c2.b);

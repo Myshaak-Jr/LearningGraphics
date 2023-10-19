@@ -22,9 +22,9 @@ void ProgramManager::LoadShaderProgram(const std::string& name, const std::vecto
 	// compile the program
 	std::vector<GLuint> compiledShaders;
 	for (const auto& [shaderType, shaderPath] : shaders) {
-		compiledShaders.push_back(createShader(shaderType, shaderPath.c_str()));
+		compiledShaders.push_back(CreateShader(shaderType, shaderPath.c_str()));
 	}
-	shaderProgram.program = createProgram(compiledShaders);
+	shaderProgram.program = CreateProgram(compiledShaders);
 	std::for_each(compiledShaders.begin(), compiledShaders.end(), glDeleteShader);
 
 	shaderProgram.modelUnifLoc = glGetUniformLocation(shaderProgram.program, "model");
@@ -57,7 +57,7 @@ std::vector<comps::shaderProgram> ProgramManager::getShaderPrograms() {
 	return result;
 }
 
-GLuint ProgramManager::createShader(GLenum shaderType, const char* path) {
+GLuint ProgramManager::CreateShader(GLenum shaderType, const char* path) {
 	std::string strShader;
 	std::ifstream shaderFile;
 
@@ -131,7 +131,7 @@ GLuint ProgramManager::createShader(GLenum shaderType, const char* path) {
 	return shader;
 }
 
-GLuint ProgramManager::createProgram(std::vector<GLuint>& shaders) {
+GLuint ProgramManager::CreateProgram(std::vector<GLuint>& shaders) {
 	GLuint program = glCreateProgram();
 
 	for (auto shader : shaders) {
