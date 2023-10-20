@@ -27,7 +27,7 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	prgMngr = std::make_shared<ProgramManager>();
 	modelMngr = std::make_shared<ModelManager>();
 	registry = std::make_shared<entt::registry>();
-	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 20.0f), 0.0f, 0.0f, 45.0f, width, height, 0.1f, 300.0f, 10.0f);
+	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 20.0f), 0.0f, 0.0f, 45.0f, width, height, 1.0f, 300.0f, 10.0f);
 	postprocess = std::make_unique<PostprocessManager>(width, height, "./shaders/postprocess-vertex.glsl", "./shaders/postprocess-fragment.glsl");
 }
 
@@ -227,7 +227,7 @@ void App::render() {
 
 	postprocess->BeforeRender(bgColor);
 	systems::render(registry, camera, prgMngr);
-	postprocess->AfterRender();
+	postprocess->AfterRender(bgColor);
 
 	SDL_GL_SwapWindow(window.get());
 }

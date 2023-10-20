@@ -32,6 +32,7 @@ private:
 
 	std::unique_ptr<PostprocessManager> postprocess;
 
+	float normalThreshold = 0.01f;
 
 	//std::unique_ptr<Terrain> terrain;
 

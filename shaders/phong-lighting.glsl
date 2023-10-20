@@ -39,8 +39,9 @@ void main() {
 		result += calcDirLight(dirLights[i], viewDir, norm);
 	}
 
-	FragColor = vec4(result, 1.0f);
-	NormalColor = vec4((1.0 + norm) * 0.5, 1.0f);
+	//FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
+	FragColor = vec4(result, 1.0);
+	NormalColor = vec4((1.0 + norm) * 0.5, 1.0);
 }
 
 vec3 calcDirLight(DirLight light, vec3 viewDir, vec3 normal) {

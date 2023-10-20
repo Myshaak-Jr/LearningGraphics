@@ -22,8 +22,9 @@ private:
 	GLint normalTextureLoc;
 	GLint depthTextureLoc;
 	GLint resolutionLoc;
+	GLint bgColorLoc;
 
-	static void createTexture(GLuint& texture, int w, int h, GLenum format, GLenum type);
+	static void createTexture(GLuint& texture, int w, int h, GLint internalFormat, GLenum format, GLenum type);
 
 	void initFramebuffer(int width, int height);
 	void initVAO();
@@ -35,6 +36,6 @@ public:
 	
 	void Resize(int width, int height);
 
-	void BeforeRender(myColor::RGB bgColor);
-	void AfterRender();
+	void BeforeRender(const myColor::RGB& bgColor);
+	void AfterRender(const myColor::RGB& bgColor);
 };
