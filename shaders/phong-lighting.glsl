@@ -27,36 +27,52 @@ uniform mat4 view;
 uniform DirLight dirLights[MAX_DIR_LIGHTS];
 uniform uint numDirLights;
 
-vec3 calcDirLight(DirLight light, vec3 viewDir, vec3 normal);
+vec3 calcDirLightDiffuse(vec3 lightDiffuse, vec3 lightDir, vec3 normal);
+vec3 calcDirLightSpecular(vec3 lightSpecular, vec3 lightDir, vec3 viewDir, vec3 normal);
+
+float luminance(vec3 color) {
+	return dot(color, vec3(0.299, 0.587, 0.114));
+}
 
 void main() {
 	vec3 norm = normalize(Normal);
 	vec3 viewDir = normalize(-FragPos);
 
-	vec3 result = vec3(0.0f);
+	float overallLightDiffuseLuminance = 0.0;
+	//vec3 overallLightDiffuseColor = vec3(0.0);
+	float overallLightSpecularLuminance = 0.0;
+	//vec3 overallLightSpecularColor = vec3(0.0);
+	vec3 overallLightAmbient = vec3(0.0);
 
 	for (uint i = 0; i < numDirLights; i++) {
-		result += calcDirLight(dirLights[i], viewDir, norm);
+		vec3 lightDir = normalize(-(view * vec4(dirLights[i].dir, 0.0)).xyz);
+
+		float diff = max(dot(norm, lightDir), 0.0);
+
+		//overallLightDiffuseColor += dirLights[i].diffuse;
+		overallLightDiffuseLuminance += luminance(dirLights[i].diffuse) * diff;
+
+		vec3 reflectDir = reflect(-lightDir, norm);
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	
+		//overallLightSpecularColor += dirLights[i].specular;
+		overallLightSpecularLuminance += luminance(dirLights[i].specular) * spec;
+
+		overallLightAmbient += dirLights[i].ambient * material.ambient;
 	}
 
+
 	//FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
-	FragColor = vec4(result, 1.0);
-	NormalColor = vec4((1.0 + norm) * 0.5, 1.0);
-}
 
-vec3 calcDirLight(DirLight light, vec3 viewDir, vec3 normal) {
-	// convert light direction to view space
-	vec3 lightDir = normalize(-(view * vec4(light.dir, 0.0)).xyz);
+	const float numShades = 10.0;
+	const float luminanceExponent = 0.7;
 	
-	// calculate diffuse intensity
-	float diff = max(dot(normal, lightDir), 0.0);
+	//float intensity = floor(pow(overallLightDiffuseLuminance) * numShades) / numShades;
 
-	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	//intensity = pow(intensity, 0.5);
 
-	vec3 ambient = light.ambient * material.ambient;
-	vec3 diffuse = light.diffuse * diff * material.diffuse;
-	vec3 specular = light.specular * spec * material.specular;
+	//vec3 result = mix(vec3(0.0), material.diffuse, intensity) + overallLightAmbient;
 
-	return ambient + diffuse + specular;
+	FragColor = vec4(vec3(pow(overallLightDiffuseLuminance, luminanceExponent)), 1.0);
+	NormalColor = vec4((1.0 + norm) * 0.5, 1.0);
 }

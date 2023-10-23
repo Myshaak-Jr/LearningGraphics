@@ -85,10 +85,18 @@ void Camera::resizeCallback(int windowWidth, int windowHeight) {
 	projection = glm::perspective(glm::radians(fov), aspectRatio, near, far);
 }
 
-glm::mat4 Camera::getView() {
+glm::mat4 Camera::getView() const {
 	return view;
 }
 
-glm::mat4 Camera::getProjection() {
+glm::mat4 Camera::getProjection() const {
 	return projection;
+}
+
+float Camera::getZNear() const {
+	return near;
+}
+
+float Camera::getZFar() const {
+	return far;
 }

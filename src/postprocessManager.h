@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
+
 #include <glad/glad.h>
 
 #include "color.h"
+#include "camera.h"
 
 
 class PostprocessManager {
@@ -23,6 +26,8 @@ private:
 	GLint depthTextureLoc;
 	GLint resolutionLoc;
 	GLint bgColorLoc;
+	GLint zNearLoc;
+	GLint zFarLoc;
 
 	static void createTexture(GLuint& texture, int w, int h, GLint internalFormat, GLenum format, GLenum type);
 
@@ -37,5 +42,5 @@ public:
 	void Resize(int width, int height);
 
 	void BeforeRender(const myColor::RGB& bgColor);
-	void AfterRender(const myColor::RGB& bgColor);
+	void AfterRender(const myColor::RGB& bgColor, const std::unique_ptr<Camera>& camera);
 };
