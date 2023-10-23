@@ -227,7 +227,7 @@ void App::render() {
 
 	postprocess->BeforeRender(bgColor);
 	systems::render(registry, camera, prgMngr);
-	postprocess->AfterRender(bgColor);
+	postprocess->AfterRender(bgColor, camera);
 
 	SDL_GL_SwapWindow(window.get());
 }

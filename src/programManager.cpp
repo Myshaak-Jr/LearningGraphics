@@ -91,7 +91,9 @@ GLuint ProgramManager::CreateShader(GLenum shaderType, const char* path) {
 			strShaderType = "fragment";
 			break;
 		}
-		std::cerr << "Reading failure in " << strShaderType << "shader." << std::endl;
+		std::stringstream ss;
+		ss << "Reading failure in " << strShaderType << "shader." << std::endl;
+		throw std::runtime_error(ss.str());
 	}
 
 	const char* c_strShader = strShader.c_str();
@@ -123,9 +125,10 @@ GLuint ProgramManager::CreateShader(GLenum shaderType, const char* path) {
 			break;
 		}
 
-		std::cerr << "Compile failure in " << strShaderType << " shader:" << std::endl << infoLog << std::endl;
-
+		std::stringstream ss;
+		ss << "Compile failure in " << strShaderType << " shader:" << std::endl << infoLog << std::endl;
 		delete[] infoLog;
+		throw std::runtime_error(ss.str());
 	}
 
 	return shader;

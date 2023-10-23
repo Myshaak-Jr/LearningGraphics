@@ -36,6 +36,9 @@ public:
 	void scrollCallback(float y);
 	void resizeCallback(int windowWidth, int windowHeight);
 
-	glm::mat4 getView();
-	glm::mat4 getProjection();
+	glm::mat4 getView() const;
+	glm::mat4 getProjection() const;
+
+	float getZNear() const;
+	float getZFar() const;
 };

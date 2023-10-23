@@ -178,6 +178,8 @@ void PostprocessManager::initProgram(int width, int height, const std::string& v
 	depthTextureLoc = glGetUniformLocation(shaderProgram, "depthTexture");
 	resolutionLoc = glGetUniformLocation(shaderProgram, "resolution");
 	bgColorLoc = glGetUniformLocation(shaderProgram, "bgColor");
+	zNearLoc = glGetUniformLocation(shaderProgram, "zNear");
+	zFarLoc = glGetUniformLocation(shaderProgram, "zFar");
 
 	glUseProgram(shaderProgram);
 	glUniform2f(resolutionLoc, static_cast<float>(width), static_cast<float>(height));
@@ -252,7 +254,7 @@ void PostprocessManager::BeforeRender(const myColor::RGB& bgColor) {
 	}
 }
 
-void PostprocessManager::AfterRender(const myColor::RGB& bgColor) {
+void PostprocessManager::AfterRender(const myColor::RGB& bgColor, const std::unique_ptr<Camera>& camera) {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR);
 
@@ -271,6 +273,9 @@ void PostprocessManager::AfterRender(const myColor::RGB& bgColor) {
 	}
 
 	glUniform3f(bgColorLoc, bgColor.r, bgColor.g, bgColor.b);
+
+	glUniform1f(zNearLoc, camera->getZNear());
+	glUniform1f(zFarLoc, camera->getZFar());
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, colorTexture);

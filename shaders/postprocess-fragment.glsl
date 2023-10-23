@@ -1,6 +1,6 @@
 #version 410 core
 
-in vec2 TexCoords;
+in vec2 TexCoord;
 
 uniform sampler2D colorTexture;
 uniform sampler2D normalTexture;
@@ -8,70 +8,84 @@ uniform sampler2D depthTexture;
 uniform vec2 resolution;
 uniform vec3 bgColor;
 
-const float depthThreshold = 0.02;
-const float normalThreshold = 0.12;
+uniform float zNear, zFar;
+
+const float depthThreshold = 0.2;
+const float normalThreshold = 0.2;
 
 out vec4 FragColor;
 
 
-float checkDepthDifference(vec2 coord, vec2 texelSize)
-{
-	float currentDepth = texture(depthTexture, coord).r;
-
-	float leftDepth = texture(depthTexture, coord + vec2(-texelSize.x, 0.0)).r;
-	float rightDepth = texture(depthTexture, coord + vec2(texelSize.x, 0.0)).r;
-	float bottomDepth = texture(depthTexture, coord + vec2(0.0, -texelSize.y)).r;
-	float topDepth = texture(depthTexture, coord + vec2(0.0, texelSize.y)).r;
-	
-	float leftDiff = abs(currentDepth - leftDepth);
-	float rightDiff = abs(currentDepth - rightDepth);
-	float bottomDiff = abs(currentDepth - bottomDepth);
-	float topDiff = abs(currentDepth - topDepth);
-
-	return max(max(leftDiff, rightDiff), max(bottomDiff, topDiff));
+float linearDepth(float z) {
+    float z_n = 2.0 * z - 1.0;
+    float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
+    return z_e;
 }
 
-float checkNormalDifference(vec2 coord, vec2 texelSize)
-{
-	vec3 currentNormal = texture(normalTexture, coord).rgb;
-
-	vec3 leftNormal = texture(normalTexture, coord + vec2(-texelSize.x, 0.0)).rgb;
-	vec3 rightNormal = texture(normalTexture, coord + vec2(texelSize.x, 0.0)).rgb;
-	vec3 bottomNormal = texture(normalTexture, coord + vec2(0.0, -texelSize.y)).rgb;
-	vec3 topNormal = texture(normalTexture, coord + vec2(0.0, texelSize.y)).rgb;
+float depthSobel(vec2 coord, vec2 texelSize) {
+	float top_left = linearDepth(texture(depthTexture, coord + vec2(-texelSize.x, texelSize.y)).r);
+	float top_right = linearDepth(texture(depthTexture, coord + texelSize).r);
+	float bottom_left = linearDepth(texture(depthTexture, coord + -texelSize).r);
+	float bottom_right = linearDepth(texture(depthTexture, coord + vec2(texelSize.x, -texelSize.y)).r);
 	
-	float leftDiff = length(currentNormal - leftNormal);
-	float rightDiff = length(currentNormal - rightNormal);
-	float bottomDiff = length(currentNormal - bottomNormal);
-	float topDiff = length(currentNormal - topNormal);
+	float left = linearDepth(texture(depthTexture, coord + vec2(-texelSize.x, 0.0)).r);
+	float right = linearDepth(texture(depthTexture, coord + vec2(texelSize.x, 0.0)).r);
+	float bottom = linearDepth(texture(depthTexture, coord + vec2(0.0, -texelSize.y)).r);
+	float top = linearDepth(texture(depthTexture, coord + vec2(0.0, texelSize.y)).r);
+	
+	// horizontal
+	float gx = top_left + 2 * left + bottom_left - (top_right + 2 * right + bottom_right);
+	gx /= 8;
 
-	return max(max(leftDiff, rightDiff), max(bottomDiff, topDiff));
+	// vertical
+	float gy = top_left + 2 * top + top_right - (bottom_left + 2 * bottom + bottom_right);
+	gy /= 8;
+	
+	// result
+	return length(vec2(gx, gy));
+}
+
+float normalSobel(vec2 coord, vec2 texelSize) {
+	vec3 current = texture(normalTexture, coord).rgb * 2.0 - 1.0;
+
+	float top_left = dot(current, texture(normalTexture, coord + vec2(-texelSize.x, texelSize.y)).rgb  * 2.0 - 1.0);
+	float top_right = dot(current, texture(normalTexture, coord + texelSize).rgb  * 2.0 - 1.0);
+	float bottom_left = dot(current, texture(normalTexture, coord + -texelSize).rgb  * 2.0 - 1.0);
+	float bottom_right = dot(current, texture(normalTexture, coord + vec2(texelSize.x, -texelSize.y)).rgb  * 2.0 - 1.0);
+	
+	float left = dot(current, texture(normalTexture, coord + vec2(-texelSize.x, 0.0)).rgb  * 2.0 - 1.0);
+	float right = dot(current, texture(normalTexture, coord + vec2(texelSize.x, 0.0)).rgb  * 2.0 - 1.0);
+	float bottom = dot(current, texture(normalTexture, coord + vec2(0.0, -texelSize.y)).rgb  * 2.0 - 1.0);
+	float top = dot(current, texture(normalTexture, coord + vec2(0.0, texelSize.y)).rgb  * 2.0 - 1.0);
+	
+	// horizontal
+	float gx = top_left + 2 * left + bottom_left - (top_right + 2 * right + bottom_right);
+
+	// vertical
+	float gy = top_left + 2 * top + top_right - (bottom_left + 2 * bottom + bottom_right);
+	
+	// result
+	return length(vec2(gx, gy));
 }
 
 bool isEdge(vec2 coord, vec2 texelSize) {
-	float depthEdge = checkDepthDifference(coord, texelSize);
-	float normalEdge = checkNormalDifference(coord, texelSize);
+	float depthEdge = depthSobel(TexCoord, texelSize);
+	float normalEdge = normalSobel(TexCoord, texelSize);
 
-	return (depthEdge > depthThreshold) || (normalEdge > normalThreshold);
+	return (depthEdge >= depthThreshold) || (normalEdge >= normalThreshold);
 }
 
 float luminance(vec3 color) {
 	return dot(color, vec3(0.299, 0.587, 0.114));
 }
 
-void main()
-{
+void main() {
 	vec2 texelSize = 1.0 / resolution;
 
-	vec3 phongColor = texture(colorTexture, TexCoords).rgb;
-	float lum = luminance(phongColor);
-	bool isSpecular = lum > 0.6;
-
-
-	if (isEdge(TexCoords, texelSize) || isSpecular) {
-		FragColor = vec4(phongColor, 1.0);
+	if (isEdge(TexCoord, texelSize)) {
+		FragColor = vec4(0.0);
 	}
 	else {
-		FragColor = vec4(bgColor, 1.0);
+		FragColor = vec4(texture(colorTexture, TexCoord).rgb, 1.0);
 	}
 }
