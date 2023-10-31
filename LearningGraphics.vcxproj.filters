@@ -48,10 +48,10 @@
     <ClCompile Include="src\color.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\terrain.cpp">
+    <ClCompile Include="src\myMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\myMath.cpp">
+    <ClCompile Include="src\postprocessManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -128,14 +128,17 @@
     <ClInclude Include="src\comps\light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\terrain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\myMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\comps\terrainComps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\postprocessManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\postprocess-fragment-copy.glsl" />
   </ItemGroup>
 </Project>

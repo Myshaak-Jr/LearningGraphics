@@ -198,16 +198,16 @@ template <class TIndex>
 void Mesh<TIndex>::loadMaterial(const std::vector<tinyobj::material_t>& materials, const tinyobj::shape_t& shape) {
 	if (shape.mesh.material_ids.empty()) {
 		std::cout << "Warning: Mesh " << name << " has no material, using default white one.";
-		material = comps::material(myColor::RedGreenBlue(1.0f), myColor::RedGreenBlue(0.8f), myColor::RedGreenBlue(0.5f), 255.0f);
+		material = comps::material(myColor::RGB(1.0f), myColor::RGB(0.8f), myColor::RGB(0.5f), 255.0f);
 		return;
 	}
 
 	int material_id = shape.mesh.material_ids[0];
 	const tinyobj::material_t& mat = materials[material_id];
 	
-	myColor::RedGreenBlue ambient{ mat.ambient[0], mat.ambient[1] , mat.ambient[2] };
-	myColor::RedGreenBlue diffuse{ mat.diffuse[0], mat.diffuse[1] , mat.diffuse[2] };
-	myColor::RedGreenBlue specular{ mat.specular[0], mat.specular[1] , mat.specular[2] };
+	myColor::RGB ambient{ mat.ambient[0], mat.ambient[1] , mat.ambient[2] };
+	myColor::RGB diffuse{ mat.diffuse[0], mat.diffuse[1] , mat.diffuse[2] };
+	myColor::RGB specular{ mat.specular[0], mat.specular[1] , mat.specular[2] };
 	float shininess = mat.shininess;
 
 	material = comps::material(ambient, diffuse, specular, shininess);

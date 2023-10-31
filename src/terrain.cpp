@@ -5,8 +5,6 @@
 #include <iostream>
 #include <functional>
 
-#include <windows.h>
-
 #include "myMath.h"
 
 #include "comps/position.h"
@@ -61,11 +59,6 @@ void myTerrain::Terrain::initChunkLoaders() {
 
 	for (size_t i = 0; i < numChunkLoaders; ++i) {
 		std::thread thread{ std::bind(&myTerrain::Terrain::chunkLoaderJob, this) };
-
-		std::wstringstream ss;
-
-		ss << "ChunkLoader" << i;
-		SetThreadDescription(thread.native_handle(), ss.str().c_str());
 
 		chunkLoaders.emplace_back(std::move(thread));
 	}
@@ -176,13 +169,13 @@ std::string myTerrain::Terrain::getNameFromChunkPos(glm::ivec2 chunkPos) const {
 }
 
 comps::material myTerrain::Terrain::getMaterialFromChunkPos(glm::ivec2 chunkPos) const {
-	const myColor::LCH start(myColor::RedGreenBlue(50, 168, 82));
-	const myColor::LCH end(myColor::RedGreenBlue(194, 134, 31));
+	const myColor::LCH start(myColor::RGB(50, 168, 82));
+	const myColor::LCH end(myColor::RGB(194, 134, 31));
 
 	const float t = myMath::hashPos(chunkPos, seed) / static_cast<float>(UINT32_MAX);
-	const myColor::RedGreenBlue color = myColor::lerpLCH(start, end, t);
+	const myColor::RGB color = myColor::lerpLCH(start, end, t);
 
-	return comps::material(color, color, myColor::RedGreenBlue(0.5f), 16.0f);
+	return comps::material(color, color, myColor::RGB(0.5f), 16.0f);
 }
 
 float myTerrain::Terrain::generateHeightValue(glm::vec2 samplePos) const {

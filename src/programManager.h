@@ -11,10 +11,6 @@ class ProgramManager {
 private:
 	std::unordered_map<std::string, comps::shaderProgram> shaderPrograms;
 
-	static GLuint createShader(GLenum shaderType, const char* path);
-	static GLuint createProgram(std::vector<GLuint>& shaders);
-
-
 public:
 	ProgramManager() = default;
 	~ProgramManager();
@@ -22,4 +18,7 @@ public:
 	void LoadShaderProgram(const std::string& name, const std::vector<std::pair<GLenum, std::string>>& shaders, bool requireLights);
 	const comps::shaderProgram& getShaderProgram(const std::string& name) const;
 	std::vector<comps::shaderProgram> getShaderPrograms();
+
+	static GLuint CreateShader(GLenum shaderType, const char* path);
+	static GLuint CreateProgram(std::vector<GLuint>& shaders);
 };

@@ -22,9 +22,9 @@ void ProgramManager::LoadShaderProgram(const std::string& name, const std::vecto
 	// compile the program
 	std::vector<GLuint> compiledShaders;
 	for (const auto& [shaderType, shaderPath] : shaders) {
-		compiledShaders.push_back(createShader(shaderType, shaderPath.c_str()));
+		compiledShaders.push_back(CreateShader(shaderType, shaderPath.c_str()));
 	}
-	shaderProgram.program = createProgram(compiledShaders);
+	shaderProgram.program = CreateProgram(compiledShaders);
 	std::for_each(compiledShaders.begin(), compiledShaders.end(), glDeleteShader);
 
 	shaderProgram.modelUnifLoc = glGetUniformLocation(shaderProgram.program, "model");
@@ -57,7 +57,7 @@ std::vector<comps::shaderProgram> ProgramManager::getShaderPrograms() {
 	return result;
 }
 
-GLuint ProgramManager::createShader(GLenum shaderType, const char* path) {
+GLuint ProgramManager::CreateShader(GLenum shaderType, const char* path) {
 	std::string strShader;
 	std::ifstream shaderFile;
 
@@ -91,7 +91,9 @@ GLuint ProgramManager::createShader(GLenum shaderType, const char* path) {
 			strShaderType = "fragment";
 			break;
 		}
-		std::cerr << "Reading failure in " << strShaderType << "shader." << std::endl;
+		std::stringstream ss;
+		ss << "Reading failure in " << strShaderType << "shader." << std::endl;
+		throw std::runtime_error(ss.str());
 	}
 
 	const char* c_strShader = strShader.c_str();
@@ -123,15 +125,16 @@ GLuint ProgramManager::createShader(GLenum shaderType, const char* path) {
 			break;
 		}
 
-		std::cerr << "Compile failure in " << strShaderType << " shader:" << std::endl << infoLog << std::endl;
-
+		std::stringstream ss;
+		ss << "Compile failure in " << strShaderType << " shader:" << std::endl << infoLog << std::endl;
 		delete[] infoLog;
+		throw std::runtime_error(ss.str());
 	}
 
 	return shader;
 }
 
-GLuint ProgramManager::createProgram(std::vector<GLuint>& shaders) {
+GLuint ProgramManager::CreateProgram(std::vector<GLuint>& shaders) {
 	GLuint program = glCreateProgram();
 
 	for (auto shader : shaders) {
