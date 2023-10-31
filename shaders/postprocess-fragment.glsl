@@ -75,10 +75,6 @@ bool isEdge(vec2 coord, vec2 texelSize) {
 	return (depthEdge >= depthThreshold) || (normalEdge >= normalThreshold);
 }
 
-float luminance(vec3 color) {
-	return dot(color, vec3(0.299, 0.587, 0.114));
-}
-
 void main() {
 	vec2 texelSize = 1.0 / resolution;
 

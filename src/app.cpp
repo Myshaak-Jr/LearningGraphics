@@ -97,10 +97,7 @@ void App::loadGLObjects() {
 	);
 
 	// load models
-	//modelMngr->LoadModel("tree", "models/tree.obj", "models/");
-	//modelMngr->LoadModel("temple", "models/temple.obj", "models/");
-	modelMngr->LoadModel("sphere", "models/sphere.obj", "models/");
-	modelMngr->LoadModel("temple", "models/temple.obj", "models/");
+	modelMngr->LoadModel("tree", "models/tree.obj", "models/");
 }
 
 void App::loadEntities() {
@@ -123,21 +120,7 @@ void App::loadEntities() {
 	);
 	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
 
-
-	std::mt19937 rng(std::random_device{}());
-	std::uniform_real_distribution<float> dist{-5.0f, 5.0f};
-
-	const int numSpheres = 5;
-	
-	const myColor::LCH start = myColor::RGB("#2dbd54");
-	const myColor::LCH end = myColor::RGB("#bd942d");
-
-	for (int i = 0; i < numSpheres; i++) {
-		myColor::RGB color = myColor::lerpLCH(start, end, static_cast<float>(i) / static_cast<float>(numSpheres));
-		factories::createSphere(registry, modelMngr, prgMngr, glm::vec3(dist(rng), dist(rng), dist(rng)), glm::vec3(0.0f), glm::vec3(1.0f), color);
-	}
-
-	factories::createTemple(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, 40.0f), glm::vec3(0.0f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -40.0f), glm::vec3(1.0f));
 }
 
 void App::run() {
