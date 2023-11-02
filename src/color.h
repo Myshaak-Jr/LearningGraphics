@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <glm/glm.hpp>
 
-namespace myColor {
+class Color {
+public:
+	// Color spaces
 	struct XYZ;
 	struct LAB;
 	struct LCH;
@@ -62,4 +64,78 @@ namespace myColor {
 	RGB lerpRGB(const RGB& c1, const RGB& c2, float t);
 	LCH lerpLCH(const LCH& c1, const LCH& c2, float t);
 	RGB averageRGB(const RGB& c1, const RGB& c2);
-}
+
+private:
+	RGB rgb;
+	XYZ xyz;
+	LAB lab;
+	LCH lch;
+
+	bool rgbCalculated;
+	bool xyzCalculated;
+	bool labCalculated;
+	bool lchCalculated;
+
+public:
+	Color();
+
+	Color(const RGB& color);
+	Color(const XYZ& color);
+	Color(const LAB& color);
+	Color(const LCH& color);
+
+	Color(const std::string& hex);
+	
+	template <class TColor, std::enable_if<std::is_same<TColor, RGB>::value>>
+	Color(float c0, float c1, float c2) {
+		rgb = RGB(c0, c1, c2);
+		rgbCalculated = true;
+		xyzCalculated = false;
+		labCalculated = false;
+		lchCalculated = false;
+	}
+	template <class TColor, std::enable_if<std::is_same<TColor, XYZ>::value>>
+	Color(float c0, float c1, float c2) {
+		xyz = XYZ(c0, c1, c2);
+		rgbCalculated = false;
+		xyzCalculated = true;
+		labCalculated = false;
+		lchCalculated = false;
+	}
+	template <class TColor, std::enable_if<std::is_same<TColor, LAB>::value>>
+	Color(float c0, float c1, float c2) {
+		lab = LAB(c0, c1, c2);
+		rgbCalculated = false;
+		xyzCalculated = false;
+		labCalculated = true;
+		lchCalculated = false;
+	}
+	template <class TColor, std::enable_if<std::is_same<TColor, LCH>::value>>
+	Color(float c0, float c1, float c2) {
+		lch = LCH(c0, c1, c2);
+		rgbCalculated = false;
+		xyzCalculated = false;
+		labCalculated = false;
+		lchCalculated = true;
+	}
+
+	~Color() = default;
+
+	const RGB& GetRGB();
+	const XYZ& GetXYZ();
+	const LAB& GetLAB();
+	const LCH& GetLCH();
+
+	void SetRGB(const RGB& color);
+	void SetRGB(float r, float g, float b);
+	void SetRGB(const std::string& hex);
+
+	void SetXYZ(const XYZ& color);
+	void SetXYZ(float x, float y, float z);
+
+	void SetLAB(const LAB& color);
+	void SetLAB(float l, float a, float b);
+
+	void SetLCH(const LCH& color);
+	void SetLCH(float l, float c, float h);
+};

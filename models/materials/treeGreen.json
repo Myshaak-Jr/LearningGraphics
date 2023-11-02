@@ -1,0 +1,9 @@
+{
+	"type": "color",
+	"data": {
+		"diffuse": "#2a7e19",
+		"specular": "#7f7f7f",
+		"shininess": 16
+	},
+	"shader": "colorMaterial.json"
+}

@@ -64,7 +64,7 @@ entt::entity factories::createSphere(
 	const std::shared_ptr<ModelManager>& modelMngr,
 	const std::shared_ptr<ProgramManager>& prgMngr,
 	glm::vec3 pos, glm::vec3 rot, glm::vec3 scale,
-	myColor::RGB color
+	Color::RGB color
 ) {
 	auto sphere = registry->create();
 
@@ -82,7 +82,7 @@ entt::entity factories::createSphere(
 
 	for (const auto& child : *offspring) {
 		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("phong-lighting"));
-		registry->emplace_or_replace<comps::material>(child.second, color, color, myColor::RGB(0.5f), 16.0f);
+		registry->emplace_or_replace<comps::material>(child.second, color, color, Color::RGB(0.5f), 16.0f);
 	}
 
 	return sphere;
@@ -90,7 +90,7 @@ entt::entity factories::createSphere(
 
 entt::entity factories::createDirLight(
 	const std::shared_ptr<entt::registry>& registry,
-	const myColor::RGB& color,
+	const Color::RGB& color,
 	float ambient, float diffuse, float specular,
 	float yaw, float pitch, float roll
 ) {

@@ -1,0 +1,8 @@
+{
+	"model": "tree.obj",
+	"materials": {
+		"upper-cone": "leaves.json",
+		"lower-cone": "leaves.json",
+		"trunk": "bark.json"
+	}
+}

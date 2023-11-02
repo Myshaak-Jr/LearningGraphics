@@ -3,19 +3,19 @@
 #include "../color.h"
 
 namespace comps {
-	struct material {
-		myColor::RGB ambient;
-		myColor::RGB diffuse;
-		myColor::RGB specular;
+	struct colorMaterial {
+		Color ambient;
+		Color diffuse;
+		Color specular;
 		float shininess;
 
-		inline material(myColor::RGB ambient, myColor::RGB diffuse, myColor::RGB specular, float shininess)
+		inline colorMaterial(Color ambient, Color diffuse, Color specular, float shininess)
 			: ambient(ambient)
 			, diffuse(diffuse)
 			, specular(specular)
 			, shininess(shininess)
 		{}
 
-		inline material() : material(myColor::RGB(0.0f), myColor::RGB(0.0f), myColor::RGB(0.0f), 1.0f) {}
+		inline colorMaterial() : colorMaterial(Color::RGB(0.0f), Color::RGB(0.0f), Color::RGB(0.0f), 1.0f) {}
 	};
 }

@@ -48,7 +48,9 @@ vec3 calcDirLight(DirLight light, vec3 viewDir, vec3 normal) {
 	vec3 lightDir = normalize(-(view * vec4(light.dir, 0.0)).xyz);
 	
 	// calculate diffuse intensity
-	float diff = max(dot(normal, lightDir), 0.0);
+	float diff = dot(normal, lightDir) * 0.5 + 0.5;
+	diff = pow(diff, 1.0 / 2.0);
+	diff = (diff + 0.3) / (1.0 + 0.3);
 
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);

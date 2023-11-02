@@ -6,7 +6,7 @@
 
 
 namespace comps {
-	struct shaderProgram {
+	struct shader {
 		GLuint program;
 
 		GLint modelUnifLoc;

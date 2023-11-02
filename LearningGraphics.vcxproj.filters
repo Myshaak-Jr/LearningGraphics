@@ -54,6 +54,9 @@
     <ClCompile Include="src\postprocessManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\prototypeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\glad\glad.h">
@@ -104,13 +107,13 @@
     <ClInclude Include="src\comps\scale.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\comps\shaderProgram.h">
+    <ClInclude Include="src\comps\shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\comps\transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\modelManager.h">
+    <ClInclude Include="src\prototypeManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\comps\material.h">
@@ -135,6 +138,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\postprocessManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\materialManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

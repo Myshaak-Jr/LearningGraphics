@@ -92,7 +92,7 @@ void App::loadScene() {
 void App::loadGLObjects() {
 	// load shader programs
 	prgMngr->LoadShaderProgram("phong-lighting",
-		{ { GL_VERTEX_SHADER, "./shaders/model.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/phong-lighting.glsl" } },
+		{ { GL_VERTEX_SHADER, "./shaders/model.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/single-color.glsl" } },
 		true
 	);
 
@@ -114,7 +114,7 @@ void App::loadEntities() {
 	//	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
 	//}
 
-	auto light = factories::createDirLight(registry, myColor::RGB("#FFFFFF"),
+	auto light = factories::createDirLight(registry, Color::RGB("#FFFFFF"),
 		0.1f, 0.5f, 0.7f,
 		30.0f, 30.0f, 0.0f
 	);
@@ -201,7 +201,7 @@ void App::update(float dt) {
 }
 
 void App::render() {
-	myColor::RGB bgColor = myColor::RGB("#615d54");
+	Color::RGB bgColor = Color::RGB("#615d54");
 
 	//glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
 	//glClearDepth(1.0f);

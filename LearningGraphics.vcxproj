@@ -152,6 +152,7 @@
     <ClCompile Include="src\programManager.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\modelManager.cpp" />
+    <ClCompile Include="src\prototypeManager.cpp" />
     <ClCompile Include="src\systems.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -171,16 +172,17 @@
     <ClInclude Include="src\comps\rotatedByKeyboard.h" />
     <ClInclude Include="src\comps\orientation.h" />
     <ClInclude Include="src\comps\scale.h" />
-    <ClInclude Include="src\comps\shaderProgram.h" />
+    <ClInclude Include="src\comps\shader.h" />
     <ClInclude Include="src\comps\terrainComps.h" />
     <ClInclude Include="src\comps\transform.h" />
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\factories.h" />
+    <ClInclude Include="src\materialManager.h" />
     <ClInclude Include="src\myMath.h" />
     <ClInclude Include="src\perlin.h" />
     <ClInclude Include="src\postprocessManager.h" />
     <ClInclude Include="src\programManager.h" />
-    <ClInclude Include="src\modelManager.h" />
+    <ClInclude Include="src\prototypeManager.h" />
     <ClInclude Include="src\systems.h" />
   </ItemGroup>
   <ItemGroup>

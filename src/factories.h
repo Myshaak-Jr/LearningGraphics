@@ -27,13 +27,13 @@ namespace factories {
 		const std::shared_ptr<ModelManager>& modelMngr,
 		const std::shared_ptr<ProgramManager>& prgMngr,
 		glm::vec3 pos, glm::vec3 rot, glm::vec3 scale,
-		myColor::RGB color
+		Color::RGB color
 	);
 
 	// applies first pitch than yaw than roll
 	entt::entity createDirLight(
 		const std::shared_ptr<entt::registry>& registry,
-		const myColor::RGB& color,
+		const Color::RGB& color,
 		float ambient, float diffuse, float specular,
 		float yaw, float pitch, float roll
 	);
