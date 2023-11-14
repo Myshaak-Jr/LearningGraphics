@@ -26,7 +26,7 @@ private:
 	SDL_GLContext context;
 	
 	std::shared_ptr<ProgramManager> prgMngr;
-	std::shared_ptr<ModelManager> modelMngr;
+	std::shared_ptr<IntermediateModelManager> modelMngr;
 
 	std::unique_ptr<Camera> camera;
 

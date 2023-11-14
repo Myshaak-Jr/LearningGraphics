@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../color.h"
+#include "../../color.h"
 
 namespace comps {
 	struct colorMaterial {

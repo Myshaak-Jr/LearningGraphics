@@ -33,7 +33,7 @@
     <ClCompile Include="src\factories.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\modelManager.cpp">
+    <ClCompile Include="src\modelFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="include\tinyobj\tiny_obj_loader.cpp">
@@ -54,7 +54,13 @@
     <ClCompile Include="src\postprocessManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\prototypeManager.cpp">
+    <ClCompile Include="src\modelManager\intermediateModelManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelManager\modelManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelManager\id_t.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,7 +86,7 @@
     <ClInclude Include="src\factories.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\comps\mesh.h">
+    <ClInclude Include="src\modelManager\comps\mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\comps\position.h">
@@ -107,16 +113,16 @@
     <ClInclude Include="src\comps\scale.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\comps\shader.h">
+    <ClInclude Include="src\modelManager\comps\shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\comps\transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\prototypeManager.h">
+    <ClInclude Include="src\modelManager\intermediateModelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\comps\material.h">
+    <ClInclude Include="src\modelManager\comps\material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera.h">
@@ -140,7 +146,16 @@
     <ClInclude Include="src\postprocessManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\materialManager.h">
+    <ClInclude Include="src\modelFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelManager\modelManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelManager\id_t.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelManager\model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

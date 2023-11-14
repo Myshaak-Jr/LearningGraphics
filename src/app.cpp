@@ -25,7 +25,7 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	createContext(width, height);
 
 	prgMngr = std::make_shared<ProgramManager>();
-	modelMngr = std::make_shared<ModelManager>();
+	modelMngr = std::make_shared<IntermediateModelManager>();
 	registry = std::make_shared<entt::registry>();
 	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 20.0f), 0.0f, 0.0f, 45.0f, width, height, 1.0f, 300.0f, 10.0f);
 	postprocess = std::make_unique<PostprocessManager>(width, height, "./shaders/postprocess-vertex.glsl", "./shaders/postprocess-fragment.glsl");

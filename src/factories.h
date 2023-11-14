@@ -10,21 +10,21 @@
 namespace factories {
 	entt::entity createTree(
 		const std::shared_ptr<entt::registry>& registry,
-		const std::shared_ptr<ModelManager>& modelMngr,
+		const std::shared_ptr<IntermediateModelManager>& modelMngr,
 		const std::shared_ptr<ProgramManager>& prgMngr,
 		glm::vec3 pos, glm::vec3 scale
 	);
 
 	entt::entity createTemple(
 		const std::shared_ptr<entt::registry>& registry,
-		const std::shared_ptr<ModelManager>& modelMngr,
+		const std::shared_ptr<IntermediateModelManager>& modelMngr,
 		const std::shared_ptr<ProgramManager>& prgMngr,
 		glm::vec3 pos, glm::vec3 rot, glm::vec3 scale
 	);
 
 	entt::entity createSphere(
 		const std::shared_ptr<entt::registry>& registry,
-		const std::shared_ptr<ModelManager>& modelMngr,
+		const std::shared_ptr<IntermediateModelManager>& modelMngr,
 		const std::shared_ptr<ProgramManager>& prgMngr,
 		glm::vec3 pos, glm::vec3 rot, glm::vec3 scale,
 		Color::RGB color

@@ -5,5 +5,5 @@
 		"specular": "#7f7f7f",
 		"shininess": 16
 	},
-	"shader": "colorMaterial.json"
+	"shader": "colorMaterial"
 }
