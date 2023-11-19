@@ -9,7 +9,7 @@ namespace comps {
 		Color specular;
 		float shininess;
 
-		inline colorMaterial(Color ambient, Color diffuse, Color specular, float shininess)
+		inline colorMaterial(const Color& ambient, const Color& diffuse, const Color& specular, float shininess)
 			: ambient(ambient)
 			, diffuse(diffuse)
 			, specular(specular)

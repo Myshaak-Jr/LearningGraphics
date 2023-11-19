@@ -1,9 +1,8 @@
 {
 	"type": "color",
 	"data": {
-		"diffuse": "#2a7e19",
+		"diffuse": "#78C700",
 		"specular": "#7f7f7f",
 		"shininess": 16
-	},
-	"shader": "colorMaterial"
+	}
 }

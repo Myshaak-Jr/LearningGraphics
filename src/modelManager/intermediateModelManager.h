@@ -1,6 +1,9 @@
+/*
+	Loads JSON and .OBJ files into my id based representation
+*/
+
 #pragma once
 
-#include <unordered_map>
 #include <unordered_set>
 #include <string>
 #include <memory>
@@ -14,27 +17,37 @@
 
 class IntermediateModelManager {
 private:
-	// std::unordered_map<shaderId_t, Shader> shaders;
-	std::unordered_map<materialId_t, Material> materials;
-	// the first string is the relative path of the .obj file from the ./model/objects/
-	std::unordered_map<objectId_t, Object> objects;
+	id_umap<shaderId_t, Shader> shaders;
+	id_umap<materialId_t, Material> materials;
+	id_umap<objectId_t, Object> objects;
 
-	const Object& loadObject(const objectId_t& objectId);
-	const Object& getOrLoadObject(const objectId_t& objectId);
+	void loadObject(const objectId_t& objectId);
+	void ensureObjectLoaded(const objectId_t& objectId);
+	[[nodiscard]] const Object& getOrLoadObject(const objectId_t& objectId);
 
-	static Material loadColorMaterial(const rapidjson::GenericObject<false, rapidjson::Value>& data);
+	[[nodiscard]] static Material loadColorMaterial(const rapidjson::GenericObject<false, rapidjson::Value>& data);
 
-	const Material& loadMaterial(const materialId_t& materialId);
-	const Material& getOrLoadMaterial(const materialId_t& materialId);
+	void loadMaterial(const materialId_t& materialId);
+	void ensureMaterialLoaded(const materialId_t& materialId);
+	[[nodiscard]] const Material& getOrLoadMaterial(const materialId_t& materialId);
+
+	void loadShader(const shaderId_t& shaderId);
+	void ensureShaderLoaded(const shaderId_t& shaderId);
+	[[nodiscard]] const Shader& getOrLoadShader(const shaderId_t& shaderId);
 
 	static void loadMesh(Object& target, const meshId_t& meshId, const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape);
+
+	const Object& parseModelObject(Model& model, const rapidjson::Document& document);
+	void parseModelMaterial(Model& model, const rapidjson::Document& document, const Object& object);
+	void parseModelShader(Model& model, const rapidjson::Document& document, const Object& object);
 
 public:
 	IntermediateModelManager();
 	~IntermediateModelManager();
 
-	Model LoadModel(const modelId_t& modelId);
+	[[nodiscard]] Model LoadModel(const modelId_t& modelId);
 
-	const Object& GetObject(const objectId_t& objectId);
-	const Material& GetMaterial(const materialId_t& materialId);
+	[[nodiscard]] const Object& GetObject(const objectId_t& objectId);
+	[[nodiscard]] const Material& GetMaterial(const materialId_t& materialId);
+	[[nodiscard]] const Shader& GetShader(const shaderId_t& shaderId);
 };

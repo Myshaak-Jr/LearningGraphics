@@ -1,8 +1,9 @@
 {
 	"object": "tree",
-	"materials": {
+	"material": {
 		"upper-cone": "leaves",
 		"lower-cone": "leaves",
 		"trunk": "bark"
-	}
+	},
+	"shader": "color-material"
 }

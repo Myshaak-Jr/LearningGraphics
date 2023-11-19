@@ -7,7 +7,7 @@
 #include <glm/gtx/euler_angles.hpp>
 
 #include "camera.h"
-#include "programManager.h"
+#include "modelManager/modelManager.h"
 
 #include "comps/position.h"
 #include "comps/orientation.h"
@@ -32,7 +32,7 @@ namespace systems {
 	void clearTransformCache(const std::shared_ptr<entt::registry>& registry);
 	void calcAbsoluteTransform(const std::shared_ptr<entt::registry>& registry);
 
-	void render(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::shared_ptr<ProgramManager>& prgMngr);
+	void render(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::shared_ptr<ModelManager>& modelMngr);
 }
 
 template <Axis A>

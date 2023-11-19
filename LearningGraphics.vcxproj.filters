@@ -21,9 +21,6 @@
     <ClCompile Include="include\glad\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\programManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\app.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,9 +28,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\factories.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\modelFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="include\tinyobj\tiny_obj_loader.cpp">
@@ -51,16 +45,19 @@
     <ClCompile Include="src\myMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\postprocessManager.cpp">
+    <ClCompile Include="src\hashHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelManager\glModelManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelManager\id_t.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\modelManager\intermediateModelManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\modelManager\modelManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\modelManager\id_t.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -77,16 +74,10 @@
     <ClInclude Include="src\systems.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\programManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\factories.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\modelManager\comps\mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\comps\position.h">
@@ -113,16 +104,7 @@
     <ClInclude Include="src\comps\scale.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\modelManager\comps\shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\comps\transform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\modelManager\intermediateModelManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\modelManager\comps\material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera.h">
@@ -143,23 +125,37 @@
     <ClInclude Include="src\comps\terrainComps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\postprocessManager.h">
+    <ClInclude Include="src\hashHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\modelFactory.h">
+    <ClInclude Include="src\modelManager\comps\material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\modelManager\modelManager.h">
+    <ClInclude Include="src\modelManager\comps\mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelManager\comps\shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelManager\glModelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\modelManager\id_t.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\modelManager\intermediateModelManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\modelManager\model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelManager\modelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\postprocess-fragment-copy.glsl" />
+    <None Include="models\materials\bark.json" />
+    <None Include="models\materials\leaves.json" />
   </ItemGroup>
 </Project>

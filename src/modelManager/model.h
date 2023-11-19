@@ -2,12 +2,15 @@
 
 #include <vector>
 #include <unordered_map>
+#include <filesystem>
 
 #include "../color.h"
 #include "id_t.h"
 
 struct Shader {
-	// TODO:
+	std::filesystem::path vertex;
+	std::filesystem::path geometry;
+	std::filesystem::path fragment;
 };
 
 enum class MaterialType {
@@ -31,6 +34,8 @@ struct Material {
 		ColorData color;
 		TextureData texture;
 	};
+
+	shaderId_t shaderId;
 };
 
 struct Vertex {
@@ -45,10 +50,11 @@ struct Mesh {
 };
 
 struct Object {
-	std::unordered_map<meshId_t, Mesh> meshes;
+	id_umap<meshId_t, Mesh> meshes;
 };
 
 struct Model {
 	objectId_t objectId;
-	std::unordered_map<meshId_t, materialId_t> materialPerMesh;
+	id_umap<meshId_t, materialId_t> materialPerMesh;
+	id_umap<meshId_t, shaderId_t> shaderPerMesh;
 };

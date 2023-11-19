@@ -1,7 +1,7 @@
 #include "id_t.h"
 
-//template<> std::filesystem::path fileParamethers<shaderId_t>::directory = "./shaders/";
-//template<> std::string fileParamethers<shaderId_t>::extension = ".json";
+template<> std::filesystem::path fileParamethers<shaderId_t>::directory = "./shaders/";
+template<> std::string fileParamethers<shaderId_t>::extension = ".json";
 template<> std::filesystem::path fileParamethers<materialId_t>::directory = "./models/materials/";
 template<> std::string fileParamethers<materialId_t>::extension = ".json";
 template<> std::filesystem::path fileParamethers<objectId_t>::directory = "./models/objects/";

@@ -11,7 +11,6 @@
 
 #include "comps/scale.h"
 #include "comps/transform.h"
-#include "comps/material.h"
 
 
 App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
@@ -24,11 +23,11 @@ App::App(int width, int height) : window(nullptr, &SDL_DestroyWindow) {
 	createWindow(width, height);
 	createContext(width, height);
 
-	prgMngr = std::make_shared<ProgramManager>();
-	modelMngr = std::make_shared<IntermediateModelManager>();
+	//prgMngr = std::make_shared<ProgramManager>();
 	registry = std::make_shared<entt::registry>();
+	modelMngr = std::make_shared<ModelManager>(registry);
 	camera = std::make_unique<Camera>(glm::vec3(0.0f, 1.8f, 20.0f), 0.0f, 0.0f, 45.0f, width, height, 1.0f, 300.0f, 10.0f);
-	postprocess = std::make_unique<PostprocessManager>(width, height, "./shaders/postprocess-vertex.glsl", "./shaders/postprocess-fragment.glsl");
+	//postprocess = std::make_unique<PostprocessManager>(width, height, "./shaders/postprocess-vertex.glsl", "./shaders/postprocess-fragment.glsl");
 }
 
 App::~App() {
@@ -84,35 +83,8 @@ void App::createContext(int width, int height) {
 	//glEnable(GL_DEPTH_CLAMP);
 }
 
-void App::loadScene() {
-	loadGLObjects();
-	loadEntities();
-}
-
-void App::loadGLObjects() {
-	// load shader programs
-	prgMngr->LoadShaderProgram("phong-lighting",
-		{ { GL_VERTEX_SHADER, "./shaders/model.glsl" }, { GL_FRAGMENT_SHADER, "./shaders/single-color.glsl" } },
-		true
-	);
-
-	// load models
-	modelMngr->LoadModel("tree", "models/tree.obj", "models/");
-}
-
-void App::loadEntities() {
-	std::unique_lock<std::mutex> lock(registryEntityCreateMtx);
-
-	//const int NUM_LIGHTS = 3;
-	//myColor::RGB lightColors[NUM_LIGHTS] = { myColor::RGB("#FFFF00"), myColor::RGB("#00FFFF"), myColor::RGB("#FF00FF") };
-
-	//for (int i = 0; i < NUM_LIGHTS; i++) {
-	//	auto light = factories::createDirLight(registry, lightColors[i],
-	//		0.01f, 0.5f, 0.7f,
-	//		360.0f * static_cast<float>(i) / static_cast<float>(NUM_LIGHTS) + 30.0f, 30.0f, 0.0f
-	//	);
-	//	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
-	//}
+void App::setup() {
+	modelMngr->LoadModel("tree");
 
 	auto light = factories::createDirLight(registry, Color::RGB("#FFFFFF"),
 		0.1f, 0.5f, 0.7f,
@@ -120,10 +92,12 @@ void App::loadEntities() {
 	);
 	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
 
-	factories::createTree(registry, modelMngr, prgMngr, glm::vec3(0.0f, 0.0f, -40.0f), glm::vec3(1.0f));
+	factories::createTree(registry, modelMngr, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f));
 }
 
 void App::run() {
+	setup();
+
 	running = true;
 	while (running) {
 		handleEvents();
@@ -203,21 +177,21 @@ void App::update(float dt) {
 void App::render() {
 	Color::RGB bgColor = Color::RGB("#615d54");
 
-	//glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
-	//glClearDepth(1.0f);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
+	glClearDepth(1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-	postprocess->BeforeRender(bgColor);
-	systems::render(registry, camera, prgMngr);
-	postprocess->AfterRender(bgColor, camera);
+	//postprocess->BeforeRender(bgColor);
+	systems::render(registry, camera, modelMngr);
+	//postprocess->AfterRender(bgColor, camera);
 
 	SDL_GL_SwapWindow(window.get());
 }
 
 void App::resize(int width, int height) {
 	camera->resizeCallback(width, height);
-	postprocess->Resize(width, height);
+	//postprocess->Resize(width, height);
 
 	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 }

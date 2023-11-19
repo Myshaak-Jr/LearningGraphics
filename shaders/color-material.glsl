@@ -14,8 +14,9 @@ struct DirLight {
 	vec3 specular;
 };
 
-layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 NormalColor;
+out vec4 FragColor;
+//layout(location = 0) out vec4 FragColor;
+//layout(location = 1) out vec4 NormalColor;
 
 in vec3 Normal;
 in vec3 FragPos;
@@ -38,9 +39,9 @@ void main() {
 	for (uint i = 0; i < numDirLights; i++) {
 		result += calcDirLight(dirLights[i], viewDir, norm);
 	}
-
-	FragColor = vec4(result, 1.0);
-	NormalColor = vec4(norm * 0.5 + 0.5, 1.0);
+	
+	FragColor = vec4(material.diffuse, 1.0);
+	//NormalColor = vec4(norm * 0.5 + 0.5, 1.0);
 }
 
 vec3 calcDirLight(DirLight light, vec3 viewDir, vec3 normal) {

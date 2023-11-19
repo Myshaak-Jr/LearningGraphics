@@ -1,0 +1,8 @@
+{
+  "type": "color",
+  "data": {
+    "diffuse": "#6F4400",
+    "specular": "#7f7f7f",
+    "shininess": 16
+  }
+}

@@ -5,51 +5,26 @@
 #include <iostream>
 #include <algorithm>
 
+#include "../hashHelper.h"
 
-// tyniobj::index_t hashing function
-size_t combine_hash(size_t lhs, size_t rhs) {
-	if constexpr (sizeof(size_t) >= 8) {
-		lhs ^= rhs + 0x517cc1b727220a95 + (lhs << 6) + (lhs >> 2);
-	}
-	else {
-		lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
-	}
-	return lhs;
-}
 
-struct index_t_hash {
-	size_t operator()(const tinyobj::index_t& index) const {
-		size_t vertexHash = std::hash<int>{}(index.vertex_index);
-		size_t normalHash = std::hash<int>{}(index.normal_index);
-		size_t texcoordHash = std::hash<int>{}(index.texcoord_index);
-		return combine_hash(combine_hash(vertexHash, normalHash), texcoordHash);
-	}
-};
+/////////////////////////////////////////////////////////////////////////////////////////
+/*      MODEL MANAGER                                                                  */
+/////////////////////////////////////////////////////////////////////////////////////////
 
-struct index_t_equal {
-	bool operator()(const tinyobj::index_t& a, const tinyobj::index_t& b) const {
-		return (
-			a.vertex_index == b.vertex_index &&
-			a.normal_index == b.normal_index &&
-			a.texcoord_index == b.texcoord_index
-		);
-	}
-};
+IntermediateModelManager::IntermediateModelManager() {}
 
-// ModelManager implementation
+IntermediateModelManager::~IntermediateModelManager() {}
 
-IntermediateModelManager::IntermediateModelManager() {
 
-}
-
-IntermediateModelManager::~IntermediateModelManager() {
-
-}
+/////////////////////////////////////////////////////////////////////////////////////////
+/*      OBJECT & MESH                                                                  */
+/////////////////////////////////////////////////////////////////////////////////////////
 
 void IntermediateModelManager::loadMesh(Object& target, const meshId_t& meshId, const tinyobj::attrib_t& attrib, const tinyobj::shape_t& shape) {
 	Mesh mesh{};
 
-	std::unordered_map<tinyobj::index_t, uint16_t, index_t_hash, index_t_equal> indexTracker;
+	std::unordered_map<tinyobj::index_t, uint16_t, HashIndex, CompareIndex> indexTracker;
 	uint16_t numVertices = 0;
 
 	// for each face
@@ -112,8 +87,7 @@ void IntermediateModelManager::loadMesh(Object& target, const meshId_t& meshId, 
 	target.meshes.emplace(meshId, std::move(mesh));
 }
 
-
-const Object& IntermediateModelManager::loadObject(const objectId_t& objectId) {
+void IntermediateModelManager::loadObject(const objectId_t& objectId) {
 	const std::filesystem::path objectPath = getPathFromId(objectId);
 	
 	tinyobj::ObjReaderConfig reader_config;
@@ -121,13 +95,13 @@ const Object& IntermediateModelManager::loadObject(const objectId_t& objectId) {
 
 	if (!reader.ParseFromFile(objectPath.string(), reader_config)) {
 		if (!reader.Error().empty()) {
-			std::cerr << "TinyObjReader: " << reader.Error();
+			std::cerr << reader.Error();
 		}
 		exit(1);
 	}
 
 	if (!reader.Warning().empty()) {
-		std::cout << "TinyObjReader: " << reader.Warning();
+		std::cout << reader.Warning();
 	}
 
 	auto& attrib = reader.GetAttrib();
@@ -140,20 +114,22 @@ const Object& IntermediateModelManager::loadObject(const objectId_t& objectId) {
 	}
 
 	objects.emplace(objectId, object);
+}
 
-	return objects.at(objectId);
+void IntermediateModelManager::ensureObjectLoaded(const objectId_t& objectId) {
+	if (objects.find(objectId) == objects.end())
+		loadObject(objectId);
 }
 
 const Object& IntermediateModelManager::getOrLoadObject(const objectId_t& objectId){
-	if (objects.find(objectId) != objects.end()) {
-		return objects.at(objectId);
-	}
-
-	// load object
-	return loadObject(objectId);
+	ensureObjectLoaded(objectId);
+	return objects.at(objectId);
 }
 
-// Material
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/*      MATERIAL                                                                       */
+/////////////////////////////////////////////////////////////////////////////////////////
 
 Material IntermediateModelManager::loadColorMaterial(const rapidjson::GenericObject<false, rapidjson::Value>& data) {
 	Material material{ MaterialType::Color };
@@ -167,28 +143,17 @@ Material IntermediateModelManager::loadColorMaterial(const rapidjson::GenericObj
 	material.color.specular = Color(data["specular"].GetString());
 
 	assert(data.HasMember("shininess"));
-	assert(data["shininess"].IsFloat());
+	assert(data["shininess"].IsNumber());
 	material.color.shininess = data["shininess"].GetFloat();
 
 	return material;
 }
 
-const Material& IntermediateModelManager::loadMaterial(const materialId_t& materialId) {
-	const std::filesystem::path materialPath = getPathFromId(materialId);
+void IntermediateModelManager::loadMaterial(const materialId_t& materialId) {
+	rapidjson::Document document = parseJsonFile(materialId);
 	
-	std::ifstream file{ materialPath };
-
-	if (!file.is_open()) {
-		std::stringstream err;
-		err << "Error opening material " << materialPath << ".";
-		throw std::runtime_error(err.str());
-	}
-
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-
-	rapidjson::Document document{};
-	document.Parse(buffer.str().c_str());
+	// parse the data
+	assert(document.IsObject());
 
 	assert(document.HasMember("type"));
 	assert(document["type"].IsString());
@@ -200,78 +165,168 @@ const Material& IntermediateModelManager::loadMaterial(const materialId_t& mater
 
 	Material material{};
 
+	// load material data
 	if (type == "color") {
 		material = loadColorMaterial(data);
 	}
 	// TODO: add other material types
 
 	materials.emplace(materialId, material);
-	
-	return materials.at(materialId);
+}
+
+void IntermediateModelManager::ensureMaterialLoaded(const materialId_t& materialId) {
+	if (materials.find(materialId) == materials.end())
+		loadMaterial(materialId);
 }
 
 const Material& IntermediateModelManager::getOrLoadMaterial(const materialId_t& materialId) {
-	if (materials.find(materialId) != materials.end()) {
-		return materials.at(materialId);
-	}
-
-	// load material
-	return loadMaterial(materialId);
+	ensureMaterialLoaded(materialId);
+	return materials.at(materialId);
 }
 
-Model IntermediateModelManager::LoadModel(const modelId_t& modelId) {
-	std::filesystem::path path = getPathFromId(modelId);
-	
-	std::ifstream file{ path };
-	
-	if (!file.is_open()) {
-		std::stringstream err;
-		err << "Error opening model " << path << ".";
-		throw std::runtime_error(err.str());
-	}
-	
-	std::stringstream buffer;
-	buffer << file.rdbuf();
+/////////////////////////////////////////////////////////////////////////////////////////
+/*      SHADER                                                                         */
+/////////////////////////////////////////////////////////////////////////////////////////
 
-	file.close();
-
-	rapidjson::Document document{};
-	document.Parse(buffer.str().c_str());
+void IntermediateModelManager::loadShader(const shaderId_t& shaderId) {
+	rapidjson::Document document = parseJsonFile(shaderId);
 
 	// parse the data
 	assert(document.IsObject());
 
+	bool hasVertex = document.HasMember("vertex") && document["vertex"].IsString();
+	bool hasGeometry = document.HasMember("geometry") && document["geometry"].IsString();
+	bool hasFragment = document.HasMember("fragment") && document["fragment"].IsString();
+
+	Shader shader{};
+
+	std::filesystem::path basePath = fileParamethers<shaderId_t>::directory;
+	
+	shader.vertex = (hasVertex) ? basePath / document["vertex"].GetString() : "";
+	shader.geometry = (hasGeometry) ? basePath / document["geometry"].GetString() : "";
+	shader.fragment = (hasFragment) ? basePath / document["fragment"].GetString() : "";
+
+	shaders.emplace(shaderId, shader);
+}
+
+void IntermediateModelManager::ensureShaderLoaded(const shaderId_t& shaderId) {
+	if (shaders.find(shaderId) == shaders.end())
+		loadShader(shaderId);
+}
+
+const Shader& IntermediateModelManager::getOrLoadShader(const shaderId_t& shaderId) {
+	ensureShaderLoaded(shaderId);
+	return shaders.at(shaderId);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/*      MODEL                                                                          */
+/////////////////////////////////////////////////////////////////////////////////////////
+
+const Object& IntermediateModelManager::parseModelObject(Model& model, const rapidjson::Document& document) {
 	assert(document.HasMember("object"));
 	assert(document["object"].IsString());
 	objectId_t objectId = document["object"].GetString();
 
-	// load the object
-	Object object = getOrLoadObject(objectId);
-
-	// parse the materials
-	assert(document.HasMember("material"));
-	assert(document["material"].IsObject());
-	auto jsonMaterials = document["material"].GetObject();
-
-	Model model{};
-
 	model.objectId = objectId;
 
-	for (auto& member : jsonMaterials) {
-		meshId_t meshId{ member.name.GetString() };
-		materialId_t materialId = jsonMaterials[meshId.str.c_str()].GetString();
+	// load the object
+	return getOrLoadObject(objectId);
+}
 
-		if (object.meshes.find(meshId) == object.meshes.end()) {
-			throw std::runtime_error("Every mesh specified in the model has to be part of the object.");
+void IntermediateModelManager::parseModelMaterial(Model& model, const rapidjson::Document& document, const Object& object) {
+	assert(document.HasMember("material"));
+
+	if (document["material"].IsString()) {
+		materialId_t materialId = document["material"].GetString();
+		ensureMaterialLoaded(materialId);
+		
+		for (const auto& mesh : object.meshes) {
+			meshId_t meshId = mesh.first;
+			model.materialPerMesh.emplace(meshId, materialId);
 		}
 
-		Material material = getOrLoadMaterial(materialId);
-
-		model.materialPerMesh.emplace(meshId, materialId);
+		return;
 	}
+	
+	if (document["material"].IsObject()) {
+		auto materialIds = document["material"].GetObject();
+		
+		for (const auto& mesh : object.meshes) {
+			meshId_t meshId = mesh.first;
+			const char* meshIdCString = meshId.str.c_str();
+
+			assert(materialIds.HasMember(meshIdCString));
+			assert(materialIds[meshIdCString].IsString());
+
+			materialId_t materialId = materialIds[meshIdCString].GetString();
+
+			ensureMaterialLoaded(materialId);
+			model.materialPerMesh.emplace(mesh.first, materialId);
+		}
+		
+		return;
+	}
+	
+	throw std::runtime_error("Model has to have at least one material specified.");
+}
+
+void IntermediateModelManager::parseModelShader(Model& model, const rapidjson::Document& document, const Object& object) {
+	assert(document.HasMember("shader"));
+
+	if (document["shader"].IsString()) {
+		shaderId_t shaderId = document["shader"].GetString();
+		ensureShaderLoaded(shaderId);
+
+		for (const auto& mesh : object.meshes) {
+			meshId_t meshId = mesh.first;
+			model.shaderPerMesh.emplace(meshId, shaderId);
+		}
+
+		return;
+	}
+
+	if (document["shader"].IsObject()) {
+		auto shaderIds = document["shader"].GetObject();
+
+		for (const auto& mesh : object.meshes) {
+			meshId_t meshId = mesh.first;
+			const char* meshIdCString = meshId.str.c_str();
+
+			assert(shaderIds.HasMember(meshIdCString));
+			assert(shaderIds[meshIdCString].IsString());
+
+			shaderId_t shaderId = shaderIds[meshIdCString].GetString();
+
+			ensureShaderLoaded(shaderId);
+			model.shaderPerMesh.emplace(meshId, shaderId);
+		}
+
+		return;
+	}
+
+	throw std::runtime_error("Model has to have at least one material specified.");
+}
+
+Model IntermediateModelManager::LoadModel(const modelId_t& modelId) {
+	rapidjson::Document document = parseJsonFile(modelId);
+
+	assert(document.IsObject());
+
+
+	Model model{};
+	const Object& object = parseModelObject(model, document);
+	parseModelMaterial(model, document, object);
+	parseModelShader(model, document, object);
 
 	return model;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/*      GETTERS                                                                        */
+/////////////////////////////////////////////////////////////////////////////////////////
 
 const Object& IntermediateModelManager::GetObject(const objectId_t& objectId) {
 	assert(objects.find(objectId) != objects.end());
@@ -281,4 +336,9 @@ const Object& IntermediateModelManager::GetObject(const objectId_t& objectId) {
 const Material& IntermediateModelManager::GetMaterial(const materialId_t& materialId) {
 	assert(materials.find(materialId) != materials.end());
 	return materials.at(materialId);
+}
+
+const Shader& IntermediateModelManager::GetShader(const shaderId_t& shaderId) {
+	assert(shaders.find(shaderId) != shaders.end());
+	return shaders.at(shaderId);
 }

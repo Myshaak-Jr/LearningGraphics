@@ -1,6 +1,6 @@
 #pragma once
 
-#include "comps/material.h"
+#include "color.h"
 
 enum class Axis {
 	X,

@@ -1,37 +1,21 @@
-/*
-	A class for converting and loading my Model, Object, Material, ... structs into OpenGL's objects.
-*/
-
 #pragma once
 
-#include <memory>
+#include "glModelManager.h"
 
-#include <entt/entt.hpp>
 
-#include "comps/material.h"
-#include "comps/mesh.h"
-#include "comps/shader.h"
-
-#include "intermediateModelManager.h"
-
-class GLModelManager {
+class ModelManager {
 private:
-	std::shared_ptr<entt::registry> registry;
-	std::unique_ptr<IntermediateModelManager> intermediate;
+	std::shared_ptr<IntermediateModelManager> intermediateMngr;
+	std::shared_ptr<GLModelManager> glMngr;
 
-	using uniqueMeshId_t = std::pair<objectId_t, meshId_t>;
-
-	std::unordered_map<uniqueMeshId_t, comps::mesh> meshes;
-
-	void emplaceMesh(entt::entity entity, const uniqueMeshId_t& meshId);
-	void emplaceMaterial(entt::entity entity, const materialId_t& materialId);
-
-	const comps::mesh& getOrCreateMesh(const uniqueMeshId_t& meshId);
-	const comps::mesh& createMesh(const uniqueMeshId_t& meshId);
+	id_umap<modelId_t, Model> models;
 
 public:
-	GLModelManager(std::shared_ptr<entt::registry> registry);
-	~GLModelManager();
+	ModelManager(std::shared_ptr<entt::registry> registry);
+	~ModelManager();
 
-	void CreateInstance(const Model& model);
+	void LoadModel(const modelId_t& modelId);
+	void CreateInstance(entt::entity parent, const modelId_t& modelId);
+
+	const id_umap<shaderId_t, comps::shader>& GetShaders() const;
 };

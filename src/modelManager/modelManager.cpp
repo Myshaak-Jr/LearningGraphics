@@ -1,38 +1,29 @@
 #include "modelManager.h"
 
 
-GLModelManager::GLModelManager(std::shared_ptr<entt::registry> registry) : registry(registry) {
-	intermediate = std::make_unique<IntermediateModelManager>();
+ModelManager::ModelManager(std::shared_ptr<entt::registry> registry) {
+	intermediateMngr = std::make_unique<IntermediateModelManager>();
+	glMngr = std::make_unique<GLModelManager>(registry, intermediateMngr);
 }
 
-GLModelManager::~GLModelManager() {}
+ModelManager::~ModelManager() {}
 
 
-void GLModelManager::CreateInstance(const Model& model) {
-
-	for (const auto& [meshId, materialId] : model.materialPerMesh) {
-		entt::entity entity = registry->create();
-
-		emplaceMesh(entity, { model.objectId, meshId });
-		emplaceMaterial(entity, materialId);
-	}
+void ModelManager::LoadModel(const modelId_t& modelId) {
+	models.emplace(modelId, intermediateMngr->LoadModel(modelId));
+	glMngr->PrepareModel(models.at(modelId));
 }
 
-void GLModelManager::emplaceMesh(entt::entity entity, const uniqueMeshId_t& meshId) {
-	const comps::mesh& mesh = getOrCreateMesh(meshId);
-	registry->emplace<comps::mesh>(entity, mesh);
-}
-
-const comps::mesh& GLModelManager::getOrCreateMesh(const uniqueMeshId_t& meshId) {
-	if (meshes.find(meshId) != meshes.end()) {
-		return meshes.at(meshId);
+void ModelManager::CreateInstance(entt::entity parent, const modelId_t& modelId) {
+	if (models.find(modelId) == models.end()) {
+		std::stringstream ss;
+		ss << "Model " << modelId.str << " is not loaded.";
+		throw std::runtime_error(ss.str());
 	}
 
-	return createMesh(meshId);
+	glMngr->CreateInstance(parent, models.at(modelId));
 }
 
-const comps::mesh& GLModelManager::createMesh(const uniqueMeshId_t& meshId) {
-	const Mesh& originalMesh = intermediate->GetObject(meshId.first).meshes.at(meshId.second);
-
-
+const id_umap<shaderId_t, comps::shader>& ModelManager::GetShaders() const {
+	return glMngr->GetShaders();
 }
