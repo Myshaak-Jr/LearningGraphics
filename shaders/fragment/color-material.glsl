@@ -40,7 +40,7 @@ void main() {
 		result += calcDirLight(dirLights[i], viewDir, norm);
 	}
 	
-	FragColor = vec4(material.diffuse, 1.0);
+	FragColor = vec4(result, 1.0);
 	//NormalColor = vec4(norm * 0.5 + 0.5, 1.0);
 }
 

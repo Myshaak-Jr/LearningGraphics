@@ -1,0 +1,4 @@
+{
+  "vertex": "vertex/model.glsl",
+  "fragment": "fragment/single-color.glsl"
+}
