@@ -176,7 +176,7 @@ void setDirLightUniforms(const std::shared_ptr<entt::registry>& registry, const 
 
 
 void setLightUniforms(const std::shared_ptr<entt::registry>& registry, const std::shared_ptr<ModelManager>& modelMngr) {
-	//setDirLightUniforms(registry, modelMngr);
+	setDirLightUniforms(registry, modelMngr);
 }
 
 void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::shared_ptr<ModelManager>& modelMngr) {

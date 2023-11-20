@@ -155,7 +155,5 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\postprocess-fragment-copy.glsl" />
-    <None Include="models\materials\bark.json" />
-    <None Include="models\materials\leaves.json" />
   </ItemGroup>
 </Project>

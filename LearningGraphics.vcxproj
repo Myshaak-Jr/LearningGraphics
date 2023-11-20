@@ -189,8 +189,6 @@
     <ClInclude Include="src\systems.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="models\materials\bark.json" />
-    <None Include="models\materials\leaves.json" />
     <None Include="shaders\postprocess-fragment-copy.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

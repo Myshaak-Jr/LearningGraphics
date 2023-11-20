@@ -141,6 +141,12 @@ void GLModelManager::linkShader(comps::shader& shader, const Shader& originalSha
 	if (originalShader.vertex != "") {
 		glShaders.push_back(compileShader(originalShader.vertex, GL_VERTEX_SHADER));
 	}
+	if (originalShader.geometry != "") {
+		glShaders.push_back(compileShader(originalShader.geometry, GL_GEOMETRY_SHADER));
+	}
+	if (originalShader.fragment != "") {
+		glShaders.push_back(compileShader(originalShader.fragment, GL_FRAGMENT_SHADER));
+	}
 
 	shader.program = glCreateProgram();
 
