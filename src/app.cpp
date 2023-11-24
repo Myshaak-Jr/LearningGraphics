@@ -90,7 +90,8 @@ void App::setup() {
 		0.1f, 0.5f, 0.7f,
 		30.0f, 30.0f, 0.0f
 	);
-	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, 90.0f, false);
+	registry->emplace<comps::rotatedByKeyboard<EAngle::YAW>>(light, SDL_SCANCODE_RIGHT, SDL_SCANCODE_LEFT, 90.0f, false);
+	registry->emplace<comps::rotatedByKeyboard<EAngle::PITCH>>(light, SDL_SCANCODE_DOWN, SDL_SCANCODE_UP, 90.0f, false, 0.0f, 180.0f);
 
 	factories::createTree(registry, modelMngr, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f));
 }
