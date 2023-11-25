@@ -11,9 +11,6 @@
 #include "comps/transform.h"
 #include "comps/dynamicallyScaled.h"
 #include "comps/orbiting.h"
-#include "comps/mesh.h"
-#include "comps/shaderProgram.h"
-#include "comps/material.h"
 #include "comps/light.h"
 
 
@@ -135,12 +132,12 @@ void systems::calcAbsoluteTransform(const std::shared_ptr<entt::registry>& regis
 	}
 }
 
-void setDirLightUniforms(const std::shared_ptr<entt::registry>& registry, const std::shared_ptr<ProgramManager>& prgMngr) {
+void setDirLightUniforms(const std::shared_ptr<entt::registry>& registry, const std::shared_ptr<ModelManager>& modelMngr) {
 	auto view = registry->view<const comps::dirLight, const comps::lightEmitter, const comps::orientation>();
 
-	for (const auto& prg : prgMngr->getShaderPrograms()) {
-		if (!prg.requireLights) continue;
-		glUseProgram(prg.program);
+	for (const auto& [shaderId, shader] : modelMngr->GetShaders()) {
+		if (!shader.requireLights) continue;
+		glUseProgram(shader.program);
 
 		uint32_t i = 0;
 
@@ -151,10 +148,10 @@ void setDirLightUniforms(const std::shared_ptr<entt::registry>& registry, const 
 
 			glm::vec3 dir = orient.orient * VEC_DOWN;
 
-			GLint directionLoc = glGetUniformLocation(prg.program, (locName + ".dir").c_str());
-			GLint ambientLoc = glGetUniformLocation(prg.program, (locName + ".ambient").c_str());
-			GLint diffuseLoc = glGetUniformLocation(prg.program, (locName + ".diffuse").c_str());
-			GLint specularLoc = glGetUniformLocation(prg.program, (locName + ".specular").c_str());
+			GLint directionLoc = glGetUniformLocation(shader.program, (locName + ".dir").c_str());
+			GLint ambientLoc = glGetUniformLocation(shader.program, (locName + ".ambient").c_str());
+			GLint diffuseLoc = glGetUniformLocation(shader.program, (locName + ".diffuse").c_str());
+			GLint specularLoc = glGetUniformLocation(shader.program, (locName + ".specular").c_str());
 
 			glUniform3fv(directionLoc, 1, glm::value_ptr(dir));
 			glUniform3fv(ambientLoc, 1, glm::value_ptr(light.color.toVec3() * light.ambient));
@@ -167,7 +164,7 @@ void setDirLightUniforms(const std::shared_ptr<entt::registry>& registry, const 
 			}
 		}
 
-		GLint numLightsLoc = glGetUniformLocation(prg.program, "numDirLights");
+		GLint numLightsLoc = glGetUniformLocation(shader.program, "numDirLights");
 
 		if (numLightsLoc != -1) {
 			glUniform1ui(numLightsLoc, i);
@@ -178,20 +175,20 @@ void setDirLightUniforms(const std::shared_ptr<entt::registry>& registry, const 
 }
 
 
-void setLightUniforms(const std::shared_ptr<entt::registry>& registry, const std::shared_ptr<ProgramManager>& prgMngr) {
-	setDirLightUniforms(registry, prgMngr);
+void setLightUniforms(const std::shared_ptr<entt::registry>& registry, const std::shared_ptr<ModelManager>& modelMngr) {
+	setDirLightUniforms(registry, modelMngr);
 }
 
-void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::shared_ptr<ProgramManager>& prgMngr) {
+void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::shared_ptr<ModelManager>& modelMngr) {
 	// TODO: use uniform buffers
-	for (const auto& prg : prgMngr->getShaderPrograms()) {
+	for (const auto& [shaderId, shader] : modelMngr->GetShaders()) {
 		GLenum err;
 		while ((err = glGetError()) != GL_NO_ERROR);
 	
-		glUseProgram(prg.program);
+		glUseProgram(shader.program);
 		
-		glUniformMatrix4fv(prg.viewUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getView()));
-		glUniformMatrix4fv(prg.projUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
+		glUniformMatrix4fv(shader.viewUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getView()));
+		glUniformMatrix4fv(shader.projUnifLoc, 1, GL_FALSE, glm::value_ptr(camera->getProjection()));
 
 
 		while ((err = glGetError()) != GL_NO_ERROR) {
@@ -202,7 +199,7 @@ void setCameraUniforms(const std::unique_ptr<Camera>& camera, const std::shared_
 }
 
 void renderEntities(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera) {
-	auto view = registry->view<const comps::mesh, const comps::shaderProgram, const comps::transform, const comps::material>();
+	auto view = registry->view<const comps::mesh, const comps::shader, const comps::transform, const comps::colorMaterial>();
 	for (auto [entity, mesh, prg, transform, material] : view.each()) {
 		GLenum err;
 		while ((err = glGetError()) != GL_NO_ERROR);
@@ -245,8 +242,8 @@ void renderEntities(const std::shared_ptr<entt::registry>& registry, const std::
 	}
 }
 
-void systems::render(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::shared_ptr<ProgramManager>& prgMngr) {
-	setLightUniforms(registry, prgMngr);
-	setCameraUniforms(camera, prgMngr);
+void systems::render(const std::shared_ptr<entt::registry>& registry, const std::unique_ptr<Camera>& camera, const std::shared_ptr<ModelManager>& modelMngr) {
+	setLightUniforms(registry, modelMngr);
+	setCameraUniforms(camera, modelMngr);
 	renderEntities(registry, camera);
 }

@@ -146,12 +146,14 @@
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\color.cpp" />
     <ClCompile Include="src\factories.cpp" />
+    <ClCompile Include="src\hashHelper.cpp" />
+    <ClCompile Include="src\modelManager\glModelManager.cpp" />
+    <ClCompile Include="src\modelManager\id_t.cpp" />
+    <ClCompile Include="src\modelManager\intermediateModelManager.cpp" />
+    <ClCompile Include="src\modelManager\modelManager.cpp" />
     <ClCompile Include="src\myMath.cpp" />
     <ClCompile Include="src\perlin.cpp" />
-    <ClCompile Include="src\postprocessManager.cpp" />
-    <ClCompile Include="src\programManager.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\modelManager.cpp" />
     <ClCompile Include="src\systems.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -161,26 +163,29 @@
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\color.h" />
     <ClInclude Include="src\comps\child.h" />
-    <ClInclude Include="src\comps\material.h" />
+    <ClInclude Include="src\hashHelper.h" />
     <ClInclude Include="src\comps\dynamicallyScaled.h" />
     <ClInclude Include="src\comps\light.h" />
-    <ClInclude Include="src\comps\mesh.h" />
     <ClInclude Include="src\comps\movedByKeyboard.h" />
     <ClInclude Include="src\comps\orbiting.h" />
     <ClInclude Include="src\comps\position.h" />
     <ClInclude Include="src\comps\rotatedByKeyboard.h" />
     <ClInclude Include="src\comps\orientation.h" />
     <ClInclude Include="src\comps\scale.h" />
-    <ClInclude Include="src\comps\shaderProgram.h" />
     <ClInclude Include="src\comps\terrainComps.h" />
     <ClInclude Include="src\comps\transform.h" />
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\factories.h" />
+    <ClInclude Include="src\modelManager\comps\material.h" />
+    <ClInclude Include="src\modelManager\comps\mesh.h" />
+    <ClInclude Include="src\modelManager\comps\shader.h" />
+    <ClInclude Include="src\modelManager\glModelManager.h" />
+    <ClInclude Include="src\modelManager\id_t.h" />
+    <ClInclude Include="src\modelManager\intermediateModelManager.h" />
+    <ClInclude Include="src\modelManager\model.h" />
+    <ClInclude Include="src\modelManager\modelManager.h" />
     <ClInclude Include="src\myMath.h" />
     <ClInclude Include="src\perlin.h" />
-    <ClInclude Include="src\postprocessManager.h" />
-    <ClInclude Include="src\programManager.h" />
-    <ClInclude Include="src\modelManager.h" />
     <ClInclude Include="src\systems.h" />
   </ItemGroup>
   <ItemGroup>

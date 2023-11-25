@@ -41,6 +41,6 @@ public:
 	
 	void Resize(int width, int height);
 
-	void BeforeRender(const myColor::RGB& bgColor);
-	void AfterRender(const myColor::RGB& bgColor, const std::unique_ptr<Camera>& camera);
+	void BeforeRender(const Color::RGB& bgColor);
+	void AfterRender(const Color::RGB& bgColor, const std::unique_ptr<Camera>& camera);
 };

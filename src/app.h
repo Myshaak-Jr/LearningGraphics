@@ -8,8 +8,7 @@
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
-#include "programManager.h"
-#include "modelManager.h"
+#include "modelManager/modelManager.h"
 #include "postprocessManager.h"
 #include "camera.h"
 
@@ -20,17 +19,16 @@ private:
 	bool freeCameraMode;
 
 	std::shared_ptr<entt::registry> registry;
-	std::mutex registryEntityCreateMtx;
+	//std::mutex registryEntityCreateMtx;
 	
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 	SDL_GLContext context;
 	
-	std::shared_ptr<ProgramManager> prgMngr;
 	std::shared_ptr<ModelManager> modelMngr;
 
 	std::unique_ptr<Camera> camera;
 
-	std::unique_ptr<PostprocessManager> postprocess;
+	//std::unique_ptr<PostprocessManager> postprocess;
 
 	float normalThreshold = 0.01f;
 
@@ -41,11 +39,9 @@ private:
 	void setGLAttributes();
 	void createWindow(int width, int height);
 	void createContext(int width, int height);
-	void createFramebuffer(int width, int height);
+	//void createFramebuffer(int width, int height);
 
-	void loadGLObjects();
-	
-	void loadEntities();
+	void setup();
 
 	float calcDeltaTime();
 
@@ -58,6 +54,5 @@ public:
 	App(int width, int height);
 	~App();
 
-	void loadScene();
 	void run();
 };

@@ -225,7 +225,7 @@ void PostprocessManager::Resize(int width, int height) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void PostprocessManager::BeforeRender(const myColor::RGB& bgColor) {
+void PostprocessManager::BeforeRender(const Color::RGB& bgColor) {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR);
 
@@ -254,7 +254,7 @@ void PostprocessManager::BeforeRender(const myColor::RGB& bgColor) {
 	}
 }
 
-void PostprocessManager::AfterRender(const myColor::RGB& bgColor, const std::unique_ptr<Camera>& camera) {
+void PostprocessManager::AfterRender(const Color::RGB& bgColor, const std::unique_ptr<Camera>& camera) {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR);
 

@@ -7,13 +7,11 @@
 #include "comps/scale.h"
 #include "comps/transform.h"
 #include "comps/rotatedByKeyboard.h"
-#include "comps/material.h"
 #include "comps/light.h"
 
 entt::entity factories::createTree(
 	const std::shared_ptr<entt::registry>& registry,
 	const std::shared_ptr<ModelManager>& modelMngr,
-	const std::shared_ptr<ProgramManager>& prgMngr,
 	glm::vec3 pos, glm::vec3 scale
 ) {
 	auto tree = registry->create();
@@ -23,11 +21,7 @@ entt::entity factories::createTree(
 	registry->emplace<comps::scale>(tree, scale);
 	registry->emplace<comps::transform>(tree);
 
-	auto offspring = modelMngr->GenEntities("tree", tree, registry);
-
-	for (const auto& child : *offspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("phong-lighting"));
-	}
+	modelMngr->CreateInstance(tree, "tree");
 
 	return tree;
 }
@@ -35,7 +29,6 @@ entt::entity factories::createTree(
 entt::entity factories::createTemple(
 	const std::shared_ptr<entt::registry>& registry,
 	const std::shared_ptr<ModelManager>& modelMngr,
-	const std::shared_ptr<ProgramManager>& prgMngr,
 	glm::vec3 pos, glm::vec3 rot, glm::vec3 scale
 ) {
 	auto temple = registry->create();
@@ -50,11 +43,7 @@ entt::entity factories::createTemple(
 	registry->emplace<comps::scale>(temple, scale);
 	registry->emplace<comps::transform>(temple);
 
-	auto offspring = modelMngr->GenEntities("temple", temple, registry);
-
-	for (const auto& child : *offspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("phong-lighting"));
-	}
+	modelMngr->CreateInstance(temple, "temple");
 
 	return temple;
 }
@@ -62,9 +51,8 @@ entt::entity factories::createTemple(
 entt::entity factories::createSphere(
 	const std::shared_ptr<entt::registry>& registry,
 	const std::shared_ptr<ModelManager>& modelMngr,
-	const std::shared_ptr<ProgramManager>& prgMngr,
 	glm::vec3 pos, glm::vec3 rot, glm::vec3 scale,
-	myColor::RGB color
+	Color::RGB color
 ) {
 	auto sphere = registry->create();
 
@@ -78,19 +66,14 @@ entt::entity factories::createSphere(
 	registry->emplace<comps::scale>(sphere, scale);
 	registry->emplace<comps::transform>(sphere);
 
-	auto offspring = modelMngr->GenEntities("sphere", sphere, registry);
-
-	for (const auto& child : *offspring) {
-		registry->emplace<comps::shaderProgram>(child.second, prgMngr->getShaderProgram("phong-lighting"));
-		registry->emplace_or_replace<comps::material>(child.second, color, color, myColor::RGB(0.5f), 16.0f);
-	}
+	modelMngr->CreateInstance(sphere, "sphere");
 
 	return sphere;
 }
 
 entt::entity factories::createDirLight(
 	const std::shared_ptr<entt::registry>& registry,
-	const myColor::RGB& color,
+	const Color::RGB& color,
 	float ambient, float diffuse, float specular,
 	float yaw, float pitch, float roll
 ) {
